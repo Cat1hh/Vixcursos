@@ -143,14 +143,38 @@ async function createApp() {
     // ======================================
     // MYSQL
     // ======================================
-    const db = await mysql.createPool({
-        host: DB_HOST,
-        user: DB_USER,
-        password: DB_PASSWORD,
-        database: DB_NAME,
-        waitForConnections: DB_WAIT_FOR_CONNECTIONS,
-        connectionLimit: DB_CONNECTION_LIMIT
-    });
+    console.log("[db] Iniciando configuracao da pool MySQL");
+    console.log("[db] Host:", DB_HOST);
+    console.log("[db] Database:", DB_NAME);
+    console.log("[db] User:", DB_USER);
+    console.log("[db] waitForConnections:", DB_WAIT_FOR_CONNECTIONS);
+    console.log("[db] connectionLimit:", DB_CONNECTION_LIMIT);
+
+    let db;
+
+    try {
+        db = await mysql.createPool({
+            host: DB_HOST,
+            user: DB_USER,
+            password: DB_PASSWORD,
+            database: DB_NAME,
+            waitForConnections: DB_WAIT_FOR_CONNECTIONS,
+            connectionLimit: DB_CONNECTION_LIMIT
+        });
+
+        console.log("[db] Pool MySQL criada, validando conexao...");
+        const connection = await db.getConnection();
+        console.log("[db] Conexao MySQL validada com sucesso");
+        connection.release();
+        console.log("[db] Conexao MySQL liberada de volta para a pool");
+    } catch (erro) {
+        console.error("[db] Falha ao inicializar ou validar conexao MySQL:");
+        console.error("[db] message:", erro?.message || erro);
+        console.error("[db] code:", erro?.code || "sem_code");
+        console.error("[db] errno:", erro?.errno || "sem_errno");
+        console.error("[db] sqlState:", erro?.sqlState || "sem_sqlState");
+        throw erro;
+    }
 
     // ======================================
     // EMAIL
