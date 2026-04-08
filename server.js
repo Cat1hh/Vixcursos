@@ -37,6 +37,9 @@ const DB_HOST = process.env.DB_HOST || "34.229.93.210";
 const DB_USER = process.env.DB_USER || "vixcursos";
 const DB_PASSWORD = process.env.DB_PASSWORD || "123*abc";
 const DB_NAME = process.env.DB_NAME || "portal_cursos";
+const DB_PORT = Number(process.env.DB_PORT || 3306);
+const DB_SSL_ENABLED = String(process.env.DB_SSL_ENABLED || "false").toLowerCase() === "true";
+const DB_SSL_REJECT_UNAUTHORIZED = String(process.env.DB_SSL_REJECT_UNAUTHORIZED || "true").toLowerCase() === "true";
 const DB_WAIT_FOR_CONNECTIONS = String(process.env.DB_WAIT_FOR_CONNECTIONS || "true").toLowerCase() === "true";
 const DB_CONNECTION_LIMIT = Number(process.env.DB_CONNECTION_LIMIT || 10);
 
@@ -157,6 +160,7 @@ async function createApp() {
     // ======================================
     console.log("[db] Iniciando configuracao da pool MySQL");
     console.log("[db] Host:", DB_HOST);
+    console.log("[db] Port:", DB_PORT);
     console.log("[db] Database:", DB_NAME);
     console.log("[db] User:", DB_USER);
     console.log("[db] waitForConnections:", DB_WAIT_FOR_CONNECTIONS);
@@ -164,11 +168,15 @@ async function createApp() {
 
     const db = mysql.createPool({
         host: DB_HOST,
+        port: DB_PORT,
         user: DB_USER,
         password: DB_PASSWORD,
         database: DB_NAME,
         waitForConnections: DB_WAIT_FOR_CONNECTIONS,
-        connectionLimit: DB_CONNECTION_LIMIT
+        connectionLimit: DB_CONNECTION_LIMIT,
+        ssl: DB_SSL_ENABLED
+            ? { rejectUnauthorized: DB_SSL_REJECT_UNAUTHORIZED }
+            : undefined
     });
 
     let bancoDisponivelNaInicializacao = false;
