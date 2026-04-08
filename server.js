@@ -6,7 +6,6 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const twilio = require("twilio");
 require("dotenv").config();
-const { detect } = require("detect-port");
 
 const app = express();
 app.use(cors());
@@ -45,6 +44,7 @@ const ADMIN_COOKIE_NAME = "porto_admin_token";
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || "porto-admin-secret-change-me";
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+const SERVER_PORT = Number(process.env.PORT) || 3000;
 
 function lerCookie(req, nome) {
     const cookieHeader = req.headers.cookie || "";
@@ -90,6 +90,19 @@ function limparCookieAdmin() {
     return partes.join("; ");
 }
 
+function eErroTimeoutBanco(erro) {
+    return Boolean(erro && (erro.code === "ETIMEDOUT" || erro.code === "PROTOCOL_SEQUENCE_TIMEOUT"));
+}
+
+function responderErroBanco(res, erro, mensagem) {
+    if (eErroTimeoutBanco(erro)) {
+        return res.status(503).json({ error: "Banco de dados indisponivel" });
+    }
+
+    console.error(mensagem, erro);
+    return res.status(500).json({ error: mensagem.replace(/^Erro na rota\s*/, "").replace(/:$/, "") || "Erro interno" });
+}
+
 function verificarTokenAdmin(req) {
     const token = lerCookie(req, ADMIN_COOKIE_NAME);
     if (!token) return null;
@@ -133,8 +146,7 @@ app.use((req, res, next) => {
     return res.redirect("/admin/login.html");
 });
 
-let baseUrl = process.env.PUBLIC_BASE_URL
-    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+let baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${SERVER_PORT}`;
 
 // Servir frontend
 app.use(express.static(path.join(__dirname, "public")));
@@ -150,31 +162,58 @@ async function createApp() {
     console.log("[db] waitForConnections:", DB_WAIT_FOR_CONNECTIONS);
     console.log("[db] connectionLimit:", DB_CONNECTION_LIMIT);
 
-    let db;
+    const db = mysql.createPool({
+        host: DB_HOST,
+        user: DB_USER,
+        password: DB_PASSWORD,
+        database: DB_NAME,
+        waitForConnections: DB_WAIT_FOR_CONNECTIONS,
+        connectionLimit: DB_CONNECTION_LIMIT
+    });
 
-    try {
-        db = await mysql.createPool({
-            host: DB_HOST,
-            user: DB_USER,
-            password: DB_PASSWORD,
-            database: DB_NAME,
-            waitForConnections: DB_WAIT_FOR_CONNECTIONS,
-            connectionLimit: DB_CONNECTION_LIMIT
-        });
+    let bancoDisponivelNaInicializacao = false;
 
-        console.log("[db] Pool MySQL criada, validando conexao...");
-        const connection = await db.getConnection();
-        console.log("[db] Conexao MySQL validada com sucesso");
-        connection.release();
-        console.log("[db] Conexao MySQL liberada de volta para a pool");
-    } catch (erro) {
-        console.error("[db] Falha ao inicializar ou validar conexao MySQL:");
-        console.error("[db] message:", erro?.message || erro);
-        console.error("[db] code:", erro?.code || "sem_code");
-        console.error("[db] errno:", erro?.errno || "sem_errno");
-        console.error("[db] sqlState:", erro?.sqlState || "sem_sqlState");
-        throw erro;
+    async function inicializarBanco() {
+        try {
+            console.log("[db] Pool MySQL criada, validando conexao...");
+            const connection = await db.getConnection();
+            console.log("[db] Conexao MySQL validada com sucesso");
+            connection.release();
+            console.log("[db] Conexao MySQL liberada de volta para a pool");
+
+            await garantirColuna("pre_inscricoes", "cpf", "VARCHAR(14) NULL AFTER telefone");
+            await garantirColuna("pre_inscricoes", "rg", "VARCHAR(20) NULL AFTER cpf");
+            await garantirColuna("pre_inscricoes", "mora_vitoria", "VARCHAR(3) NULL AFTER curso_id");
+            await garantirColuna("pre_inscricoes", "escolaridade", "VARCHAR(80) NULL AFTER mora_vitoria");
+            await garantirColuna("pre_inscricoes", "cep", "VARCHAR(12) NULL AFTER escolaridade");
+            await garantirColuna("pre_inscricoes", "numero", "VARCHAR(20) NULL AFTER cep");
+            await garantirColuna("pre_inscricoes", "rua", "VARCHAR(150) NULL AFTER numero");
+            await garantirColuna("pre_inscricoes", "bairro", "VARCHAR(120) NULL AFTER rua");
+            await garantirColuna("pre_inscricoes", "municipio", "VARCHAR(120) NULL AFTER bairro");
+            await garantirColuna("pre_inscricoes", "possui_necessidade_especial", "VARCHAR(3) NULL AFTER municipio");
+            await garantirColuna("pre_inscricoes", "tipo_necessidade_especial", "VARCHAR(120) NULL AFTER possui_necessidade_especial");
+            await garantirColuna("pre_inscricoes", "cpf_documento", "LONGTEXT NULL AFTER municipio");
+            await garantirColuna("pre_inscricoes", "rg_documento", "LONGTEXT NULL AFTER cpf_documento");
+            await garantirColuna("pre_inscricoes", "documento_confirmacao", "LONGTEXT NULL AFTER municipio");
+            await garantirColuna("pre_inscricoes", "matricula_confirmada", "TINYINT(1) NOT NULL DEFAULT 0 AFTER rg_documento");
+            await garantirColuna("pre_inscricoes", "matricula_confirmada_em", "DATETIME NULL AFTER matricula_confirmada");
+            await garantirColuna("interessados", "enviado_em", "DATETIME NULL AFTER status");
+            await garantirIndice("pre_inscricoes", "idx_pre_inscricoes_cpf", "cpf");
+            await garantirIndiceUnico("pre_inscricoes", "uk_pre_inscricoes_curso_cpf", "curso_id, cpf");
+
+            bancoDisponivelNaInicializacao = true;
+            console.log("[db] Inicializacao do banco concluida com sucesso");
+        } catch (erro) {
+            bancoDisponivelNaInicializacao = false;
+            console.warn("[db] Banco indisponivel na inicializacao. O servidor vai subir mesmo assim.");
+            console.warn("[db] message:", erro?.message || erro);
+            console.warn("[db] code:", erro?.code || "sem_code");
+            console.warn("[db] errno:", erro?.errno || "sem_errno");
+            console.warn("[db] sqlState:", erro?.sqlState || "sem_sqlState");
+        }
     }
+
+    void inicializarBanco();
 
     // ======================================
     // EMAIL
@@ -665,26 +704,6 @@ async function createApp() {
         });
     }
 
-    await garantirColuna("pre_inscricoes", "cpf", "VARCHAR(14) NULL AFTER telefone");
-    await garantirColuna("pre_inscricoes", "rg", "VARCHAR(20) NULL AFTER cpf");
-    await garantirColuna("pre_inscricoes", "mora_vitoria", "VARCHAR(3) NULL AFTER curso_id");
-    await garantirColuna("pre_inscricoes", "escolaridade", "VARCHAR(80) NULL AFTER mora_vitoria");
-    await garantirColuna("pre_inscricoes", "cep", "VARCHAR(12) NULL AFTER escolaridade");
-    await garantirColuna("pre_inscricoes", "numero", "VARCHAR(20) NULL AFTER cep");
-    await garantirColuna("pre_inscricoes", "rua", "VARCHAR(150) NULL AFTER numero");
-    await garantirColuna("pre_inscricoes", "bairro", "VARCHAR(120) NULL AFTER rua");
-    await garantirColuna("pre_inscricoes", "municipio", "VARCHAR(120) NULL AFTER bairro");
-    await garantirColuna("pre_inscricoes", "possui_necessidade_especial", "VARCHAR(3) NULL AFTER municipio");
-    await garantirColuna("pre_inscricoes", "tipo_necessidade_especial", "VARCHAR(120) NULL AFTER possui_necessidade_especial");
-    await garantirColuna("pre_inscricoes", "cpf_documento", "LONGTEXT NULL AFTER municipio");
-    await garantirColuna("pre_inscricoes", "rg_documento", "LONGTEXT NULL AFTER cpf_documento");
-    await garantirColuna("pre_inscricoes", "documento_confirmacao", "LONGTEXT NULL AFTER municipio");
-    await garantirColuna("pre_inscricoes", "matricula_confirmada", "TINYINT(1) NOT NULL DEFAULT 0 AFTER rg_documento");
-    await garantirColuna("pre_inscricoes", "matricula_confirmada_em", "DATETIME NULL AFTER matricula_confirmada");
-    await garantirColuna("interessados", "enviado_em", "DATETIME NULL AFTER status");
-    await garantirIndice("pre_inscricoes", "idx_pre_inscricoes_cpf", "cpf");
-    await garantirIndiceUnico("pre_inscricoes", "uk_pre_inscricoes_curso_cpf", "curso_id, cpf");
-
     app.post("/api/admin/login", (req, res) => {
         const username = String(req.body.username || "").trim();
         const password = String(req.body.password || "").trim();
@@ -740,8 +759,7 @@ async function createApp() {
             
             res.json(rows);
         } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: "Erro ao buscar filtro" });
+            return responderErroBanco(res, err, "Erro ao buscar filtro");
         }
     });
 
@@ -778,8 +796,7 @@ async function createApp() {
             const [rows] = await db.query(querySql);
             res.json(rows);
         } catch (err) {
-            console.error("Erro na rota /api/cursos-public:", err);
-            res.status(500).json({ error: "Erro ao listar cursos" });
+            return responderErroBanco(res, err, "Erro na rota /api/cursos-public:");
         }
     });
 
@@ -817,8 +834,7 @@ async function createApp() {
 
             res.json(rows);
         } catch (err) {
-            console.error("Erro na rota /cursos:", err);
-            res.status(500).json({ error: "Erro ao listar cursos" });
+            return responderErroBanco(res, err, "Erro na rota /cursos:");
         }
     });
 
@@ -884,8 +900,7 @@ async function createApp() {
             res.json({ status: "ok", msg: "Curso criado e avisos processados automaticamente." });
 
         } catch (err) {
-            console.error("Erro na automação:", err);
-            res.status(500).json({ error: "Erro interno ao processar curso." });
+            return responderErroBanco(res, err, "Erro na automação:");
         }
     });
 
@@ -897,8 +912,7 @@ async function createApp() {
             await db.query(`UPDATE cursos SET status = 'esgotado' WHERE id = ?`, [req.params.id]);
             res.json({ status: "curso esgotado" });
         } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: "Erro ao atualizar status" });
+            return responderErroBanco(res, err, "Erro ao atualizar status");
         }
     });
     
@@ -1075,8 +1089,7 @@ async function createApp() {
                 });
             }
 
-            console.error(err);
-            res.status(500).json({ error: "Erro no servidor" });
+            return responderErroBanco(res, err, "Erro no servidor");
         }
     });
 
@@ -1161,8 +1174,7 @@ async function createApp() {
 
             res.json(rows);
         } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: "Erro ao buscar inscritos" });
+            return responderErroBanco(res, err, "Erro ao buscar inscritos");
         }
     });
 
@@ -1325,8 +1337,7 @@ async function createApp() {
             const [rows] = await db.query(`SELECT * FROM interessados ORDER BY id DESC`);
             res.json(rows);
         } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: "Erro ao listar interessados" });
+            return responderErroBanco(res, err, "Erro ao listar interessados");
         }
     });
 
@@ -1342,8 +1353,7 @@ async function createApp() {
             );
             res.json({ message: "Status atualizado!" });
         } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: "Erro ao atualizar status" });
+            return responderErroBanco(res, err, "Erro ao atualizar status");
         }
     });
 
@@ -1358,8 +1368,7 @@ async function createApp() {
             const [[{ leads }]] = await db.query(`SELECT COUNT(*) AS leads FROM interessados WHERE status = 'aguardando'`);
             res.json({ total, ativos, inscritos, leads });
         } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: "Erro ao buscar estatísticas" });
+            return responderErroBanco(res, err, "Erro ao buscar estatísticas");
         }
     });
 
@@ -1382,8 +1391,7 @@ async function createApp() {
             `);
             res.json(rows);
         } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: "Erro ao buscar stats" });
+            return responderErroBanco(res, err, "Erro ao buscar stats");
         }
     });
 
@@ -1398,8 +1406,7 @@ async function createApp() {
             await db.query(`DELETE FROM cursos WHERE id = ?`, [id]);
             res.json({ message: "Curso removido com sucesso." });
         } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: "Erro ao remover curso" });
+            return responderErroBanco(res, err, "Erro ao remover curso");
         }
     });
 
@@ -1461,8 +1468,7 @@ async function createApp() {
             return res.json({ reply: `Não entendi 😅  \nTente perguntar:\n\n• "curso 12"\n• "vagas"\n• "lista de cursos"\n• "quero me inscrever"` });
 
         } catch (err) {
-            console.error(err);
-            return res.json({ reply: "Erro ao processar mensagem." });
+            return responderErroBanco(res, err, "Erro ao processar mensagem.");
         }
     });
         // ============================================================
@@ -1480,8 +1486,7 @@ async function createApp() {
 
             res.json({ vagasHoje, vagas2026 });
         } catch (err) {
-            console.error("Erro ao carregar estatísticas:", err);
-            res.status(500).json({ error: "Erro ao buscar estatísticas" });
+            return responderErroBanco(res, err, "Erro ao carregar estatísticas:");
         }
     });
     // ============================================================
@@ -1509,8 +1514,7 @@ async function createApp() {
             if (rows.length === 0) return res.status(404).json({ error: "Curso não encontrado" });
             res.json(rows[0]);
         } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: "Erro ao buscar detalhes" });
+            return responderErroBanco(res, err, "Erro ao buscar detalhes");
         }
     });
 
@@ -1530,29 +1534,16 @@ async function createApp() {
 if (require.main === module) {
     createApp()
         .then((app) => {
-            const portaPreferida = Number(process.env.PORT) || 3000;
+            baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${SERVER_PORT}`;
 
-            detect(portaPreferida)
-                .then((portaLivre) => {
-                    baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${portaLivre}`;
+            const server = app.listen(SERVER_PORT, () => {
+                console.log(`Servidor rodando em http://localhost:${SERVER_PORT}`);
+            });
 
-                    if (portaLivre !== portaPreferida) {
-                        console.warn(`⚠️ Porta ${portaPreferida} ocupada. Subindo na porta ${portaLivre}.`);
-                    }
-
-                    const server = app.listen(portaLivre, () => {
-                        console.log(` Servidor rodando em http://localhost:${portaLivre}`);
-                    });
-
-                    server.on("error", (err) => {
-                        console.error("Erro ao iniciar servidor HTTP:", err);
-                        process.exit(1);
-                    });
-                })
-                .catch((err) => {
-                    console.error("Falha ao iniciar aplicação:", err);
-                    process.exit(1);
-                });
+            server.on("error", (err) => {
+                console.error("Erro ao iniciar servidor HTTP:", err);
+                process.exit(1);
+            });
         })
         .catch((err) => {
             console.error("Falha ao iniciar aplicação:", err);
