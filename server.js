@@ -274,7 +274,7 @@ async function createApp() {
         }
     }
 
-    await inicializarEmail();
+    void inicializarEmail();
 
     async function garantirColuna(tabela, coluna, definicao) {
         const [colunas] = await db.query(
