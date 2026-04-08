@@ -34,7 +34,7 @@ const EMAIL_SOCKET_TIMEOUT = Number(process.env.EMAIL_SOCKET_TIMEOUT || 15000);
 const EMAIL_USER = process.env.EMAIL_USER || "d3bruyn@gmail.com";
 const EMAIL_PASS = process.env.EMAIL_PASS || "uwxghfrgzqdftqzf";
 const EMAIL_FROM = process.env.EMAIL_FROM || `\"Vix Cursos\" <${EMAIL_USER}>`;
-const DB_HOST = process.env.DB_HOST || "13.220.102.66";
+const DB_HOST = process.env.DB_HOST || "34.229.93.210";
 const DB_USER = process.env.DB_USER || "vixcursos";
 const DB_PASSWORD = process.env.DB_PASSWORD || "123*abc";
 const DB_NAME = process.env.DB_NAME || "portal_cursos";
@@ -133,12 +133,13 @@ app.use((req, res, next) => {
     return res.redirect("/admin/login.html");
 });
 
-let baseUrl = "http://localhost:3000";
+let baseUrl = process.env.PUBLIC_BASE_URL
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
 // Servir frontend
 app.use(express.static(path.join(__dirname, "public")));
 
-async function start() {
+async function createApp() {
     // ======================================
     // MYSQL
     // ======================================
@@ -1499,28 +1500,40 @@ async function start() {
         res.status(404).send("Arquivo não encontrado!");
     });
 
-    // ============================================================
-    // START SERVER
-    // ============================================================
-    const portaPreferida = Number(process.env.PORT) || 3000;
-    const portaLivre = await detect(portaPreferida);
-    baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${portaLivre}`;
-
-    if (portaLivre !== portaPreferida) {
-        console.warn(`⚠️ Porta ${portaPreferida} ocupada. Subindo na porta ${portaLivre}.`);
-    }
-
-    const server = app.listen(portaLivre, () => {
-        console.log(` Servidor rodando em http://localhost:${portaLivre}`);
-    });
-
-    server.on("error", (err) => {
-        console.error("Erro ao iniciar servidor HTTP:", err);
-        process.exit(1);
-    });
+    return app;
 }
 
-start().catch((err) => {
-    console.error("Falha ao iniciar aplicação:", err);
-    process.exit(1);
-});
+if (require.main === module) {
+    createApp()
+        .then((app) => {
+            const portaPreferida = Number(process.env.PORT) || 3000;
+
+            detect(portaPreferida)
+                .then((portaLivre) => {
+                    baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${portaLivre}`;
+
+                    if (portaLivre !== portaPreferida) {
+                        console.warn(`⚠️ Porta ${portaPreferida} ocupada. Subindo na porta ${portaLivre}.`);
+                    }
+
+                    const server = app.listen(portaLivre, () => {
+                        console.log(` Servidor rodando em http://localhost:${portaLivre}`);
+                    });
+
+                    server.on("error", (err) => {
+                        console.error("Erro ao iniciar servidor HTTP:", err);
+                        process.exit(1);
+                    });
+                })
+                .catch((err) => {
+                    console.error("Falha ao iniciar aplicação:", err);
+                    process.exit(1);
+                });
+        })
+        .catch((err) => {
+            console.error("Falha ao iniciar aplicação:", err);
+            process.exit(1);
+        });
+}
+
+module.exports = createApp;
