@@ -40,6 +40,8 @@ const DB_NAME = process.env.DB_NAME || "portal_cursos";
 const DB_PORT = Number(process.env.DB_PORT || 3306);
 const DB_SSL_ENABLED = String(process.env.DB_SSL_ENABLED || "false").toLowerCase() === "true";
 const DB_SSL_REJECT_UNAUTHORIZED = String(process.env.DB_SSL_REJECT_UNAUTHORIZED || "true").toLowerCase() === "true";
+const DB_CONNECT_TIMEOUT = Number(process.env.DB_CONNECT_TIMEOUT || 6000);
+const DB_QUERY_TIMEOUT = Number(process.env.DB_QUERY_TIMEOUT || 7000);
 const DB_WAIT_FOR_CONNECTIONS = String(process.env.DB_WAIT_FOR_CONNECTIONS || "true").toLowerCase() === "true";
 const DB_CONNECTION_LIMIT = Number(process.env.DB_CONNECTION_LIMIT || 10);
 
@@ -94,7 +96,17 @@ function limparCookieAdmin() {
 }
 
 function eErroTimeoutBanco(erro) {
-    return Boolean(erro && (erro.code === "ETIMEDOUT" || erro.code === "PROTOCOL_SEQUENCE_TIMEOUT"));
+    const code = erro && erro.code;
+    return Boolean(
+        code && [
+            "ETIMEDOUT",
+            "PROTOCOL_SEQUENCE_TIMEOUT",
+            "ECONNREFUSED",
+            "ENOTFOUND",
+            "EHOSTUNREACH",
+            "PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR"
+        ].includes(code)
+    );
 }
 
 function responderErroBanco(res, erro, mensagem) {
@@ -163,6 +175,8 @@ async function createApp() {
     console.log("[db] Port:", DB_PORT);
     console.log("[db] Database:", DB_NAME);
     console.log("[db] User:", DB_USER);
+    console.log("[db] connectTimeout:", DB_CONNECT_TIMEOUT);
+    console.log("[db] queryTimeout:", DB_QUERY_TIMEOUT);
     console.log("[db] waitForConnections:", DB_WAIT_FOR_CONNECTIONS);
     console.log("[db] connectionLimit:", DB_CONNECTION_LIMIT);
 
@@ -172,12 +186,26 @@ async function createApp() {
         user: DB_USER,
         password: DB_PASSWORD,
         database: DB_NAME,
+        connectTimeout: DB_CONNECT_TIMEOUT,
         waitForConnections: DB_WAIT_FOR_CONNECTIONS,
         connectionLimit: DB_CONNECTION_LIMIT,
         ssl: DB_SSL_ENABLED
             ? { rejectUnauthorized: DB_SSL_REJECT_UNAUTHORIZED }
             : undefined
     });
+
+    const queryOriginal = db.query.bind(db);
+    db.query = (sql, values) => {
+        if (typeof sql === "string") {
+            return queryOriginal({ sql, timeout: DB_QUERY_TIMEOUT }, values);
+        }
+
+        if (sql && typeof sql === "object" && !Array.isArray(sql) && !Object.prototype.hasOwnProperty.call(sql, "timeout")) {
+            return queryOriginal({ timeout: DB_QUERY_TIMEOUT, ...sql }, values);
+        }
+
+        return queryOriginal(sql, values);
+    };
 
     let bancoDisponivelNaInicializacao = false;
 
