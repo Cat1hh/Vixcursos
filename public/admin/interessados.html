@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interessados | Vix Cursos Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css_adm/admin.css">
+    <style>
+        /* Classes usadas pelo interessados.js na renderização dinâmica */
+        .status { padding: 5px 12px; border-radius: 50px; font-size: .75rem; font-weight: 700; border: none; cursor: pointer; transition: .15s; }
+        .status.aguardando { background: #FEF3C7; color: #92400E; }
+        .status.enviado    { background: #D1FAE5; color: #065F46; }
+        .status:hover { filter: brightness(.98); }
+        /* Modal do gráfico */
+        .modal-grafico { background: white; width: 92%; max-width: 700px; padding: 2rem; border-radius: 12px; position: relative; box-shadow: 0 25px 60px rgba(0,0,0,.3); }
+        .controles-grafico { display: flex; justify-content: center; gap: 10px; margin-bottom: 1.25rem; }
+        .btn-toggle { background: var(--bg); border: 1.5px solid var(--border); padding: 5px 16px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: .82rem; color: var(--text-light); transition: .15s; }
+        .btn-toggle.ativo { background: var(--primary); color: white; border-color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<nav class="admin-sidebar">
+    <a href="menu.html" class="sidebar-brand">
+        <span class="brand-icon">🎓</span>
+        <div>
+            <span class="brand-name">Vix Cursos</span>
+            <span class="brand-sub">Área administrativa</span>
+        </div>
+    </a>
+    <div class="sidebar-nav">
+        <div class="nav-section">Principal</div>
+        <a href="menu.html" class="nav-link"><span class="ni">🏠</span> Dashboard</a>
+        <div class="nav-section">Academia</div>
+        <a href="inscritos.html" class="nav-link"><span class="ni">👥</span> Alunos Inscritos</a>
+        <a href="interessados.html" class="nav-link active"><span class="ni">📋</span> Interessados</a>
+        <a href="cursos.html" class="nav-link"><span class="ni">📊</span> Monitoramento</a>
+        <div class="sidebar-sep"></div>
+        <a href="../pages/index.html" class="nav-link"><span class="ni">🌐</span> Ver Site</a>
+    </div>
+</nav>
+
+<div class="admin-main">
+    <div class="page-header">
+        <div class="ph-left">
+            <h1>Fila de Interessados</h1>
+            <p>Alunos que fizeram o Quiz e aguardam contato ou vaga</p>
+        </div>
+        <div class="ph-right">
+            <button class="btn btn-outline" onclick="abrirModalGrafico()">📊 Ver Demanda</button>
+        </div>
+    </div>
+
+    <div class="page-body">
+        <div class="card">
+            <div class="table-wrap">
+                <table class="tabela-admin">
+                    <thead>
+                        <tr>
+                            <th>Nome do Lead</th>
+                            <th>Telefone (WhatsApp)</th>
+                            <th>Região</th>
+                            <th>Perfil (Curso)</th>
+                            <th>Status</th>
+                            <th>Enviado em</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="6" class="empty-state">Carregando dados...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal do Gráfico de Demanda -->
+<div id="modalGrafico" class="modal-overlay" style="display:none; align-items:center; justify-content:center;">
+    <div class="modal-grafico">
+        <button class="fechar-modal" onclick="fecharModalGrafico()">&times;</button>
+        <h2 style="text-align:center; margin-bottom:4px;">📈 Demanda por Categorias</h2>
+        <p style="text-align:center; color:var(--text-light); font-size:.85rem; margin-bottom:1.25rem;">Volume de interessados baseados no Quiz Vocacional.</p>
+        <div class="controles-grafico">
+            <button id="btnBarra" class="btn-toggle ativo" onclick="mudarTipoGrafico('bar')">📊 Em Barras</button>
+            <button id="btnLinha" class="btn-toggle" onclick="mudarTipoGrafico('line')">📈 Em Linhas</button>
+        </div>
+        <canvas id="graficoDemanda" width="400" height="200"></canvas>
+    </div>
+</div>
+
+<script src="adminjs/interessados.js"></script>
+
+</body>
+</html>

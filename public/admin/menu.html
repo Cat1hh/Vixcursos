@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Vix Cursos Admin</title>
+    <link rel="stylesheet" href="css_adm/admin.css">
+</head>
+<body>
+
+<nav class="admin-sidebar">
+    <a href="menu.html" class="sidebar-brand">
+        <span class="brand-icon">🎓</span>
+        <div>
+            <span class="brand-name">Vix Cursos</span>
+            <span class="brand-sub">Área administrativa</span>
+        </div>
+    </a>
+    <div class="sidebar-nav">
+        <div class="nav-section">Principal</div>
+        <a href="menu.html" class="nav-link active"><span class="ni">🏠</span> Dashboard</a>
+        <div class="nav-section">Academia</div>
+        <a href="inscritos.html" class="nav-link"><span class="ni">👥</span> Alunos Inscritos</a>
+        <a href="interessados.html" class="nav-link"><span class="ni">📋</span> Interessados</a>
+        <a href="cursos.html" class="nav-link"><span class="ni">📊</span> Monitoramento</a>
+        <div class="sidebar-sep"></div>
+        <a href="../pages/index.html" class="nav-link"><span class="ni">🌐</span> Ver Site</a>
+    </div>
+</nav>
+
+<div class="admin-main">
+    <div class="page-header">
+        <div class="ph-left">
+            <h1>Dashboard</h1>
+            <p>Visão geral e gerenciamento de turmas</p>
+        </div>
+        <div class="ph-right">
+            <button class="btn btn-primary" onclick="abrirModal()">➕ Novo Curso</button>
+        </div>
+    </div>
+
+    <div class="page-body">
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Total de Turmas</div>
+                <div class="kpi-value" id="kpiTotal">--</div>
+                <div class="kpi-sub">Cadastradas no sistema</div>
+            </div>
+            <div class="kpi-card green">
+                <div class="kpi-label">Turmas Ativas</div>
+                <div class="kpi-value" id="kpiAtivos">--</div>
+                <div class="kpi-sub">Com vagas disponíveis</div>
+            </div>
+            <div class="kpi-card yellow">
+                <div class="kpi-label">Alunos Inscritos</div>
+                <div class="kpi-value" id="kpiInscritos">--</div>
+                <div class="kpi-sub">Total de pré-inscrições</div>
+            </div>
+            <div class="kpi-card red">
+                <div class="kpi-label">Leads Aguardando</div>
+                <div class="kpi-value" id="kpiLeads">--</div>
+                <div class="kpi-sub">Interessados sem vaga</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h2>Gerenciamento de Turmas</h2>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID / Curso</th>
+                            <th>Período &amp; Horário</th>
+                            <th>Local / Modalidade</th>
+                            <th>Vagas</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaCursos">
+                        <tr><td colspan="6" class="empty-state">Carregando cursos...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalNovoCurso" class="modal">
+    <div class="modal-content">
+        <button class="fechar-modal" onclick="fecharModal()">&times;</button>
+        <p class="modal-title">Cadastrar Novo Curso</p>
+        <p class="modal-desc">Preencha os dados abaixo para abrir uma nova turma.</p>
+        <form id="formCriarCurso" onsubmit="criarCurso(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nome do Curso</label>
+                    <select id="curso" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Local / Polo</label>
+                    <select id="local" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Modalidade</label>
+                    <select id="modalidade" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Vagas</label>
+                    <input type="number" id="vagas" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Idade Mínima</label>
+                    <select id="idade_min" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Idade Máxima</label>
+                    <select id="idade_max" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Data de Início</label>
+                    <input type="date" id="data_inicio" required>
+                </div>
+                <div class="form-group">
+                    <label>Data de Término</label>
+                    <input type="date" id="data_termino" required>
+                </div>
+                <div class="form-group">
+                    <label>Horário Início</label>
+                    <input type="time" id="horario_inicio" required>
+                </div>
+                <div class="form-group">
+                    <label>Horário Término</label>
+                    <input type="time" id="horario_termino" required>
+                </div>
+            </div>
+            <div class="form-footer">
+                <button type="button" class="btn btn-outline" onclick="fecharModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">💾 Salvar Curso</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="adminjs/menu.js"></script>
+
+</body>
+</html>

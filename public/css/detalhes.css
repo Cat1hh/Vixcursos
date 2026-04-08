@@ -1,0 +1,213 @@
+/* =========================================================
+   ESTILOS ESPECÍFICOS DA PÁGINA DE DETALHES
+========================================================= */
+
+/* Ajuste do Hero Claro (Topo) para a página de detalhes */
+.detalhes-hero {
+    align-items: flex-start; /* Alinha o texto mais ao topo */
+    padding-bottom: 160px; /* Espaço para a onda bater sem cortar a caixa */
+}
+
+/* Card Branco da Direita (Grid de Informações do Curso) */
+.detalhes-grid-card {
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.d-grid-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #F1F5F9; /* Linha sutil separando os itens */
+}
+
+.d-grid-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Ícones dentro do Card Branco */
+.d-icon {
+    font-size: 24px;
+    background: #F8FAFC;
+    color: #1E293B;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.d-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.d-label {
+    font-size: 12px;
+    color: #94A3B8;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.d-info strong {
+    font-size: 16px;
+    color: #1E293B;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+/* =========================================================
+   ÁREA ESCURA (CONTEÚDO PROGRAMÁTICO E ATUAÇÃO)
+========================================================= */
+
+/* Caixas de Texto (O que vai aprender / Onde atuar) */
+.content-box {
+    background: #0F172A; /* Azul noturno padrão dos cards */
+    border: 1px solid #1E293B;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.cb-header {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 20px 24px;
+    border-bottom: 1px solid #1E293B;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cb-icon {
+    font-size: 24px;
+}
+
+.cb-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #F8FAFC;
+    margin: 0;
+}
+
+.cb-body {
+    padding: 24px;
+    color: #CBD5E1;
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.cb-body p {
+    margin-bottom: 15px;
+}
+
+.cb-body ul {
+    margin-left: 20px;
+    margin-bottom: 15px;
+}
+
+.cb-body li {
+    margin-bottom: 8px;
+}
+
+/* =========================================================
+   RESPONSIVO DETALHES (Para Celulares e Tablets)
+========================================================= */
+@media (max-width: 900px) {
+    .detalhes-hero {
+        padding-top: 140px;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .detalhes-grid-card {
+        margin-top: 40px;
+        width: 100%;
+    }
+    
+    .lh-actions {
+        justify-content: center;
+    }
+}
+
+body.dark-theme .d-grid-item {
+    border-bottom-color: #233047;
+}
+
+body.dark-theme .d-icon {
+    background: #111c31;
+    color: #e2e8f0;
+}
+
+body.dark-theme .d-label {
+    color: #9fb1c8;
+}
+
+body.dark-theme .d-info strong {
+    color: #f8fafc;
+}
+
+body.dark-theme .content-box {
+    background: linear-gradient(180deg, #0f172a, #0b1426);
+    border-color: #233047;
+}
+
+body.dark-theme .cb-header {
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom-color: #233047;
+}
+
+body.dark-theme .cb-header h3 {
+    color: #f8fafc;
+}
+
+body.dark-theme .cb-body {
+    color: #cbd5e1;
+}
+
+body.dark-theme .footer p {
+    color: #9fb1c8 !important;
+}
+
+@media (max-width: 600px) {
+    .detalhes-hero {
+        padding-top: 120px;
+        padding-bottom: 90px;
+    }
+
+    .detalhes-grid-card {
+        gap: 14px;
+    }
+
+    .d-grid-item {
+        gap: 10px;
+        padding-bottom: 12px;
+    }
+
+    .d-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+        border-radius: 10px;
+    }
+
+    .cb-header,
+    .cb-body {
+        padding: 16px;
+    }
+
+    .cb-header h3 {
+        font-size: 1.05rem;
+    }
+
+    .cb-body {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+}

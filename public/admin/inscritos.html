@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alunos Inscritos | Vix Cursos Admin</title>
+    <link rel="stylesheet" href="css_adm/admin.css">
+    <style>
+        /* Classes usadas pelo inscritos.js na renderização dinâmica */
+        .btn-acao { padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; text-decoration: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; white-space: nowrap; }
+        .btn-ver  { background: #3b82f6; color: white; }
+        .btn-ver:hover { background: #2563eb; transform: translateY(-1px); }
+        .btn-whats { background: #25D366; color: white; }
+        .btn-whats:hover { background: #1ebe57; transform: translateY(-1px); }
+        .btn-confirmar { background: #10b981; color: white; }
+        .btn-confirmar:hover { background: #059669; transform: translateY(-1px); }
+        .btn-confirmado { background: #86efac; color: #166534; border: 1px solid #22c55e; cursor: default; font-weight: 700; }
+        .btn-pdf { background: #ef4444; color: white; }
+        .btn-pdf:hover { background: #dc2626; }
+        .btn-excluir { background: #f87171; color: white; border: none; }
+        .btn-excluir:hover { background: #dc2626; }
+        .btn-voltar { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+        .btn-voltar:hover { background: var(--border); }
+        .badge.aberto   { background: #D1FAE5; color: #065F46; }
+        .badge.esgotado { background: #FEE2E2; color: #991B1B; }
+        .badge-necessidade { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 5px 12px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+        .badge-necessidade.sim { background: #fbbf24; color: #451a03; border: 1px solid #f59e0b; }
+        .badge-necessidade.nao { background: #6ee7b7; color: #065f46; border: 1px solid #34d399; }
+        .acoes-container { display: flex; gap: 6px; align-items: center; position: relative; }
+        .acoes-toggle { background: #475569; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 3px; transition: all 0.15s; }
+        .acoes-toggle:hover { background: #64748b; }
+        .acoes-dropdown { display: none; position: absolute; top: 100%; right: 0; background: #1e293b; border: 1px solid #334155; border-radius: 8px; min-width: 140px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); z-index: 500; margin-top: 2px; }
+        .acoes-dropdown.open { display: block; }
+        .acoes-dropdown a, .acoes-dropdown button { display: flex; align-items: center; gap: 6px; width: 100%; padding: 8px 12px; border: none; background: none; color: #e2e8f0; text-align: left; cursor: pointer; font-size: 0.75rem; transition: all 0.1s; text-decoration: none; border-bottom: 1px solid #334155; }
+        .acoes-dropdown a:last-child, .acoes-dropdown button:last-child { border-bottom: none; }
+        .acoes-dropdown a:hover, .acoes-dropdown button:hover { background: #334155; color: white; }
+        .grid-detalhes  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+        .detalhe-item   { background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid #334155; }
+        .detalhe-item span   { display: block; font-size: .72rem; color: #94a3b8; margin-bottom: 4px; }
+        .detalhe-item strong { color: #f8fafc; font-size: .9rem; }
+        .detalhe-secao  { grid-column: 1 / -1; color: #f9c852; border-bottom: 1px solid #334155; padding-bottom: 5px; margin-top: 12px; font-size: 1rem; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<nav class="admin-sidebar">
+    <a href="menu.html" class="sidebar-brand">
+        <span class="brand-icon">🎓</span>
+        <div>
+            <span class="brand-name">Vix Cursos</span>
+            <span class="brand-sub">Área administrativa</span>
+        </div>
+    </a>
+    <div class="sidebar-nav">
+        <div class="nav-section">Principal</div>
+        <a href="menu.html" class="nav-link"><span class="ni">🏠</span> Dashboard</a>
+        <div class="nav-section">Academia</div>
+        <a href="inscritos.html" class="nav-link active"><span class="ni">👥</span> Alunos Inscritos</a>
+        <a href="interessados.html" class="nav-link"><span class="ni">📋</span> Interessados</a>
+        <a href="cursos.html" class="nav-link"><span class="ni">📊</span> Monitoramento</a>
+        <div class="sidebar-sep"></div>
+        <a href="../pages/index.html" class="nav-link"><span class="ni">🌐</span> Ver Site</a>
+    </div>
+</nav>
+
+<div class="admin-main">
+    <div class="page-header">
+        <div class="ph-left">
+            <h1 id="tituloPaginaInscritos">Alunos Inscritos</h1>
+            <p id="subtituloPaginaInscritos">Selecione uma turma para ver a lista completa</p>
+        </div>
+        <div class="ph-right" id="acoesCabecalho">
+            <a href="menu.html" class="btn btn-outline">← Menu Admin</a>
+        </div>
+    </div>
+
+    <div class="page-body">
+
+        <!-- TELA 1: Lista de cursos -->
+        <div id="telaCursos">
+            <div class="card">
+                <div class="card-head"><h2>📚 Cursos em Andamento</h2></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome do Curso</th>
+                                <th>Local</th>
+                                <th>Vagas Restantes</th>
+                                <th>Status</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaCursosBody">
+                            <tr><td colspan="5" class="empty-state">Carregando cursos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA 2: Lista de alunos (detalhe) -->
+        <div id="telaAlunos" class="tela-oculta">
+            <div class="card">
+                <div class="card-head">
+                    <div>
+                        <h2 id="tituloCursoDetalhe">Nome do Curso</h2>
+                        <p class="text-sm text-muted" style="margin-top:4px;">
+                            📍 <span id="localCursoDetalhe">—</span> &nbsp;|&nbsp;
+                            👥 <span id="vagasCursoDetalhe">—</span>
+                        </p>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <button id="btnGerarPdfInscritos" onclick="gerarPdfInscritos()" class="btn-acao btn-pdf" style="display:none;">📄 Gerar PDF</button>
+                        <button onclick="voltarParaCursos()" class="btn btn-outline btn-sm">← Voltar</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome do Aluno</th>
+                                <th>CPF</th>
+                                <th>Telefone</th>
+                                <th>Bairro</th>
+                                <th>Necessidade Especial</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaAlunosBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal: Ficha do Aluno -->
+<div id="modalDetalhes" class="modal-overlay" style="display:none;">
+    <div class="modal-content wide">
+        <button class="close-modal" onclick="fecharModalDetalhes()">&times;</button>
+        <p class="modal-title">Ficha Completa do Aluno</p>
+        <p class="modal-desc">Dados informados na pré-inscrição.</p>
+        <div id="conteudoDetalhes" class="grid-detalhes"></div>
+        <div class="form-footer">
+            <button onclick="fecharModalDetalhes()" class="btn btn-outline">Fechar Ficha</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="adminjs/inscritos.js"></script>
+</body>
+</html>

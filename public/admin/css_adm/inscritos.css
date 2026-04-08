@@ -1,0 +1,50 @@
+   /* RESET E FUNDO */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background-color: #f4f7f6; color: #333; padding: 40px 20px; }
+        
+        /* CAIXA CENTRALIZADA */
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        /* CABEÇALHO DA PÁGINA */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { color: #0f2247; font-size: 24px; }
+        .header p { color: #666; font-size: 14px; margin-top: 5px; }
+        
+        /* BOTÕES */
+        .btn-acao { padding: 8px 15px; border-radius: 6px; font-weight: bold; font-size: 13px; text-decoration: none; border: none; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-voltar { background: #e9ecef; color: #333; }
+        .btn-voltar:hover { background: #d3d6d8; }
+        .btn-ver { background: #0f2247; color: white; }
+        .btn-ver:hover { background: #1a3668; transform: translateY(-2px); }
+        .btn-whats { background: #25D366; color: white; }
+        .btn-whats:hover { background: #1ebe57; transform: translateY(-2px); }
+        .btn-excluir { background: #ffeeba; color: #856404; border: 1px solid #ffeeba; }
+        .btn-excluir:hover { background: #ffdf7e; color: #dc3545; transform: translateY(-2px); }
+
+        /* TABELA GERAL */
+        .tabela-admin { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .tabela-admin th { background: #0f2247; color: white; text-align: left; padding: 12px; font-size: 13px; text-transform: uppercase; border-radius: 4px 4px 0 0; }
+        .tabela-admin td { padding: 15px 12px; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
+        .tabela-admin tr:hover { background: #f9fafb; }
+
+        /* STATUS DE VAGAS */
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; color: white; }
+        .badge.aberto { background: #28a745; }
+        .badge.esgotado { background: #dc3545; }
+        .alerta-bairro { color: #dc3545; font-weight: bold; font-size: 12px; display: block; margin-top: 4px; }
+
+        /* CONTROLE DE TELAS (Ocultar/Mostrar) */
+        .tela-oculta { display: none; }
+        /* Estilos extras para o modal de detalhes do aluno */
+        .modal-largo
+        { 
+         max-width: 800px;
+         width: 90%;
+         text-align: left;
+         }
+        .grid-detalhes { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .detalhe-item { background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid #334155; }
+        .detalhe-item span { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+        .detalhe-item strong { color: #f8fafc; font-size: 15px; }
+        .detalhe-secao { grid-column: 1 / -1; color: #f9c852; border-bottom: 1px solid #334155; padding-bottom: 5px; margin-top: 15px; font-size: 18px; }
+    

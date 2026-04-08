@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento | Vix Cursos Admin</title>
+    <link rel="stylesheet" href="css_adm/admin.css">
+    <style>
+        .progresso-item { margin-bottom: 1.25rem; }
+        .progresso-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
+        .barra-fundo { background: var(--border); height: 9px; border-radius: 5px; overflow: hidden; }
+        .barra-preench { height: 100%; border-radius: 5px; transition: width 0.6s ease; }
+    </style>
+</head>
+<body>
+
+<nav class="admin-sidebar">
+    <a href="menu.html" class="sidebar-brand">
+        <span class="brand-icon">🎓</span>
+        <div>
+            <span class="brand-name">Vix Cursos</span>
+            <span class="brand-sub">Área administrativa</span>
+        </div>
+    </a>
+    <div class="sidebar-nav">
+        <div class="nav-section">Principal</div>
+        <a href="menu.html" class="nav-link"><span class="ni">🏠</span> Dashboard</a>
+        <div class="nav-section">Academia</div>
+        <a href="inscritos.html" class="nav-link"><span class="ni">👥</span> Alunos Inscritos</a>
+        <a href="interessados.html" class="nav-link"><span class="ni">📋</span> Interessados</a>
+        <a href="cursos.html" class="nav-link active"><span class="ni">📊</span> Monitoramento</a>
+        <div class="sidebar-sep"></div>
+        <a href="../pages/index.html" class="nav-link"><span class="ni">🌐</span> Ver Site</a>
+    </div>
+</nav>
+
+<div class="admin-main">
+    <div class="page-header">
+        <div class="ph-left">
+            <h1>Monitoramento de Turmas</h1>
+            <p>Ocupação e desempenho de cada turma em tempo real</p>
+        </div>
+        <div class="ph-right">
+            <a href="menu.html" class="btn btn-outline">➕ Nova Turma</a>
+        </div>
+    </div>
+
+    <div class="page-body">
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Total de Turmas</div>
+                <div class="kpi-value" id="kpiTotal">--</div>
+                <div class="kpi-sub">Cadastradas no sistema</div>
+            </div>
+            <div class="kpi-card green">
+                <div class="kpi-label">Vagas Restantes</div>
+                <div class="kpi-value" id="kpiVagas">--</div>
+                <div class="kpi-sub">Em turmas ativas</div>
+            </div>
+            <div class="kpi-card yellow">
+                <div class="kpi-label">Alunos Inscritos</div>
+                <div class="kpi-value" id="kpiInscritos">--</div>
+                <div class="kpi-sub">Total de pré-inscrições</div>
+            </div>
+            <div class="kpi-card red">
+                <div class="kpi-label">Turmas Esgotadas</div>
+                <div class="kpi-value" id="kpiEsgotadas">--</div>
+                <div class="kpi-sub">Sem vagas disponíveis</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-head"><h2>📋 Tabela de Turmas</h2></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Curso</th>
+                                <th>Local</th>
+                                <th>Inscritos</th>
+                                <th>Vagas Rest.</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaCursos">
+                            <tr><td colspan="5" class="empty-state">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head"><h2>📈 Taxa de Ocupação</h2></div>
+                <div class="card-body" id="listaProgresso">
+                    <p class="text-muted text-sm">Carregando métricas...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="adminjs/cursos.js"></script>
+
+</body>
+</html>

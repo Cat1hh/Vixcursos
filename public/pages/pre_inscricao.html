@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscrição Rápida - Vix Cursos</title>
+    <link rel="stylesheet" href="../css/style.css"> 
+<style>
+        /* =========================================================
+           BACKGROUND COM AMBIENT GLOW (LUZES DE FUNDO)
+        ========================================================= */
+        body {
+            background-color: var(--bg-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            position: relative;
+            overflow: hidden; /* Evita que a luz vaze da tela */
+        }
+
+        /* Bolas de luz no fundo da tela (Igual na tela de detalhes) */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body::before {
+            width: 600px;
+            height: 600px;
+            background: rgba(255, 138, 90, 0.2); /* Laranja */
+            top: -200px;
+            left: -150px;
+        }
+
+        body::after {
+            width: 700px;
+            height: 700px;
+            background: rgba(243, 108, 111, 0.15); /* Coral */
+            bottom: -250px;
+            right: -200px;
+        }
+
+        /* =========================================================
+           CONTAINER DO APP (EFEITO VIDRO PREMIUM)
+        ========================================================= */
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 85vh;
+            /* Vidro escuro elegante */
+            background: rgba(18, 24, 38, 0.75); 
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* =========================================================
+           TOPO DO CHAT
+        ========================================================= */
+        .chat-header {
+            background: rgba(0,0,0,0.4);
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .chat-header img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid var(--coral-vix);
+            padding: 2px;
+            background: var(--bg-dark);
+        }
+
+        .chat-header-info h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--texto-branco);
+            margin: 0 0 4px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .chat-header-info p {
+            font-size: 12px;
+            color: #10B981; 
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .chat-header-info p::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #10B981;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #10B981; /* Brilho no status online */
+        }
+
+        /* =========================================================
+           ÁREA DAS MENSAGENS E SCROLLBAR INVISÍVEL
+        ========================================================= */
+        .chat-box {
+            flex: 1;
+            padding: 25px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            scroll-behavior: smooth;
+        }
+
+        /* Esconde a barra de rolagem para ficar parecendo um App nativo */
+        .chat-box::-webkit-scrollbar { width: 6px; }
+        .chat-box::-webkit-scrollbar-track { background: transparent; }
+        .chat-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        /* =========================================================
+           BALÕES DE MENSAGEM (FORMATO APP)
+        ========================================================= */
+        .msg {
+            max-width: 85%;
+            padding: 14px 18px;
+            font-size: 15px;
+            line-height: 1.5;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.9) translateY(15px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .msg-bot {
+            background: rgba(30, 41, 59, 0.85); /* Azul ardósia elegante */
+            color: var(--texto-branco);
+            align-self: flex-start;
+            border-radius: 18px 18px 18px 4px; /* Ponta do balão na esquerda */
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .msg-bot strong {
+            color: var(--laranja-vix); /* Destaca palavras importantes */
+        }
+
+        .msg-user {
+            background: linear-gradient(135deg, var(--coral-vix), var(--laranja-vix));
+            color: white;
+            align-self: flex-end;
+            border-radius: 18px 18px 4px 18px; /* Ponta do balão na direita */
+            box-shadow: 0 5px 15px rgba(243, 108, 111, 0.25);
+        }
+
+        /* Animação "Digitando..." */
+        .typing-indicator {
+            display: flex;
+            gap: 6px;
+            padding: 5px 2px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: var(--texto-cinza);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* =========================================================
+           RODAPÉ DO APP E INPUTS
+        ========================================================= */
+        .input-area {
+            background: rgba(0,0,0,0.3);
+            padding: 15px 20px 20px 20px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .document-wrapper {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .document-note {
+            color: #CBD5E1;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .document-action-btn {
+            background: linear-gradient(135deg, var(--coral-vix), var(--laranja-vix));
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            padding: 14px 18px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(243, 108, 111, 0.25);
+        }
+
+        .document-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #E2E8F0;
+            font-size: 13px;
+        }
+
+        .input-text-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--texto-branco);
+            padding: 15px 20px;
+            border-radius: 30px; /* Bem arredondado */
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: var(--coral-vix);
+            background: rgba(0,0,0,0.2);
+            box-shadow: 0 0 0 3px rgba(243, 108, 111, 0.15);
+        }
+
+        .chat-input::placeholder {
+            color: #64748B;
+        }
+
+        .chat-send-btn {
+            background: linear-gradient(135deg, var(--coral-vix), var(--laranja-vix));
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(243, 108, 111, 0.3);
+        }
+
+        .chat-send-btn:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .chat-send-btn svg {
+            width: 20px;
+            height: 20px;
+            margin-left: -2px; 
+            margin-top: 2px;
+        }
+
+        /* =========================================================
+           BOTÕES DE OPÇÕES RÁPIDAS (Múltipla Escolha)
+        ========================================================= */
+        .options-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-bottom: 5px;
+        }
+
+        .option-btn {
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--laranja-vix);
+            border: 1px solid rgba(255, 138, 90, 0.3);
+            padding: 12px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .option-btn:hover {
+            background: var(--coral-vix);
+            color: white;
+            border-color: var(--coral-vix);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(243, 108, 111, 0.3);
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 10px;
+            }
+
+            .app-container {
+                max-width: 100%;
+                height: 92vh;
+                border-radius: 18px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                align-items: stretch;
+                padding: 0;
+            }
+
+            .app-container {
+                height: 100vh;
+                min-height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+                border: none;
+            }
+
+            .chat-header {
+                padding: 14px 12px;
+                gap: 10px;
+            }
+
+            .chat-header img {
+                width: 40px;
+                height: 40px;
+            }
+
+            .chat-box {
+                padding: 16px 12px;
+                gap: 12px;
+            }
+
+            .msg {
+                max-width: 92%;
+                font-size: 14px;
+                padding: 12px 14px;
+            }
+
+            .input-area {
+                padding: 10px 12px 14px 12px;
+            }
+
+            .chat-input {
+                padding: 12px 14px;
+                font-size: 14px;
+            }
+
+            .chat-send-btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            .option-btn,
+            .document-action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div class="chat-header">
+            <img src="../imagem/Vitoruga.png" alt="Assistente Virtual Vix Cursos">
+            <div class="chat-header-info">
+                <h2>Assistente de Matrícula</h2>
+                <p>Online agora</p>
+            </div>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            </div>
+
+        <div class="input-area" id="inputArea">
+            <div class="options-wrapper" id="optionsWrapper" style="display: none;">
+                </div>
+
+            <div class="document-wrapper" id="documentWrapper">
+                <div class="document-note" id="documentNote"></div>
+                <input type="file" id="documentInput" accept="image/*" style="display: none;">
+                <button type="button" id="documentButton" class="document-action-btn"></button>
+                <div class="document-preview" id="documentPreview" style="display: none;"></div>
+            </div>
+
+            <div class="input-text-wrapper" id="textInputWrapper" style="display: none;">
+                <input type="text" id="userInput" class="chat-input" placeholder="Digite aqui..." autocomplete="off">
+                <button id="sendBtn" class="chat-send-btn">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="../script/pre_inscricao.js"></script>
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
+        </div>
+    </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+        new window.VLibras.Widget('https://vlibras.gov.br/app');
+    </script>
+</body>
+</html>
