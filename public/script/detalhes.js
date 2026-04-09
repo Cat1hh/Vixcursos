@@ -177,7 +177,7 @@ async function carregarPaginaDetalhes() {
 
     try {
         // 3. FETCH COM TIMESTAMP (Evita cache do navegador)
-        const res = await fetch(`http://localhost:3000/cursos-detalhes/${id}?t=${Date.now()}`);
+        const res = await fetch(`/api/cursos-public/${id}?t=${Date.now()}`);
         
         // Verifica se o curso existe
         if (!res.ok) throw new Error('Curso não encontrado');

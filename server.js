@@ -836,6 +836,46 @@ async function createApp() {
         }
     });
 
+    app.get("/api/cursos-public/:id", async (req, res) => {
+        try {
+            const { id } = req.params;
+            const querySql = `
+                SELECT 
+                    c.id, 
+                    COALESCE(fcurso.curso, 'Curso sem nome') AS nome, 
+                    c.vagas, 
+                    c.status,
+                    TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio, 
+                    TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino,
+                    DATE_FORMAT(c.data_inicio, '%d/%m/%Y') AS data_inicio,
+                    DATE_FORMAT(c.data_termino, '%d/%m/%Y') AS data_termino,
+                    COALESCE(fc.categoria, 'Geral') AS categoria, 
+                    COALESCE(fiMin.idade, '-') AS idade_min, 
+                    COALESCE(fiMax.idade, '-') AS idade_max,
+                    COALESCE(fm.modalidade, 'Não informada') AS modalidade, 
+                    COALESCE(fl.local, 'Vitória') AS local, 
+                    c.criado_em
+                FROM cursos c
+                LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
+                LEFT JOIN filtro_categoria fc ON fc.id = c.categoria_id
+                LEFT JOIN filtro_idade fiMin ON fiMin.id = c.idade_min
+                LEFT JOIN filtro_idade fiMax ON fiMax.id = c.idade_max
+                LEFT JOIN filtro_modalidade fm ON fm.id = c.modalidade_id
+                LEFT JOIN filtro_local fl ON fl.id = c.local_id
+                WHERE c.id = ?
+            `;
+            const [rows] = await db.query(querySql, [id]);
+            
+            if (rows.length === 0) {
+                return res.status(404).json({ error: "Curso não encontrado" });
+            }
+            
+            res.json(rows[0]);
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro na rota /api/cursos-public/:id:");
+        }
+    });
+
     app.get("/cursos", exigirAuthAdmin, async (req, res) => {
         try {
             const { id } = req.query;
