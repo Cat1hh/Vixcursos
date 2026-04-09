@@ -217,6 +217,10 @@ app.use((req, res, next) => {
     return res.redirect("/admin/login.html");
 });
 
+app.get(["/admin", "/admin/"], (req, res) => {
+    return res.redirect("/admin/login.html");
+});
+
 let baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${SERVER_PORT}`;
 
 // Servir frontend
