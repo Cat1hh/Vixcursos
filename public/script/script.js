@@ -1,9 +1,41 @@
 /* =========================================================
    1. INICIALIZAÇÃO E SPLASH SCREEN
 ========================================================= */
-document.body.classList.add('splash-active');
+const SPLASH_SEEN_KEY = 'vixcursos_index_splash_seen';
+
+function splashJaFoiVista() {
+    try {
+        return localStorage.getItem(SPLASH_SEEN_KEY) === '1';
+    } catch {
+        return false;
+    }
+}
+
+function marcarSplashComoVista() {
+    try {
+        localStorage.setItem(SPLASH_SEEN_KEY, '1');
+    } catch {
+        // Ignora se o navegador bloquear storage.
+    }
+}
+
+const deveExibirSplash = !splashJaFoiVista();
+
+if (deveExibirSplash) {
+    document.body.classList.add('splash-active');
+} else {
+    const splashInicial = document.getElementById('splash-screen');
+    if (splashInicial) {
+        splashInicial.remove();
+    }
+}
 
 window.addEventListener('load', () => {
+    if (!deveExibirSplash) {
+        document.body.classList.remove('splash-active');
+        return;
+    }
+
     setTimeout(() => {
         const splash = document.getElementById('splash-screen');
         if (splash) {
@@ -11,6 +43,7 @@ window.addEventListener('load', () => {
             setTimeout(() => splash.remove(), 500);
         }
         document.body.classList.remove('splash-active');
+        marcarSplashComoVista();
     }, 2200);
 });
 
