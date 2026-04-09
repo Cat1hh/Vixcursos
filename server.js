@@ -1,4 +1,5 @@
 const express = require("express");
+const fs = require("fs");
 const mysql = require("mysql2/promise");
 const cors = require("cors");
 const path = require("path");
@@ -478,84 +479,112 @@ async function createApp() {
         return `${baseUrl}/pre_inscricao.html?id=${curso.id}&nome=${encodeURIComponent(curso.nome || 'curso')}`;
     }
 
+    const EMAIL_BRIDGE_CID = "vix-terceira-ponte";
+    const EMAIL_BRIDGE_ASSET_PATH = path.join(__dirname, "public", "imagem", "terceira_ponte.png");
+
+    function montarAnexosEmailPadrao() {
+        if (!fs.existsSync(EMAIL_BRIDGE_ASSET_PATH)) {
+            return [];
+        }
+
+        return [
+            {
+                filename: "terceira_ponte.png",
+                path: EMAIL_BRIDGE_ASSET_PATH,
+                cid: EMAIL_BRIDGE_CID
+            }
+        ];
+    }
+
+    function montarLayoutEmailBase({ tituloSecao, subtituloSecao, conteudoHtml, exibirPonte = false }) {
+        const camadaPonte = exibirPonte
+            ? `<img src="cid:${EMAIL_BRIDGE_CID}" alt="Terceira Ponte" style="position:absolute;right:-20px;bottom:-30px;width:360px;max-width:60%;opacity:0.2;">`
+            : "";
+
+        return `
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    body { margin: 0; padding: 0; background: #fdfbf9; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b; }
+                    .wrapper { max-width: 640px; margin: 0 auto; background: #fdfbf9; }
+                    .hero { position: relative; overflow: hidden; background: linear-gradient(135deg, #004564 0%, #1a5874 100%); padding: 34px 28px 88px; }
+                    .hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px); background-size: 28px 28px; }
+                    .hero-content { position: relative; z-index: 1; }
+                    .brand { color: #f8fafc; font-weight: 800; font-size: 23px; letter-spacing: -0.02em; margin: 0; }
+                    .subtitle { color: #d7eaf3; margin: 6px 0 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+                    .card { background: #ffffff; margin: -56px 18px 0; border: 1px solid #e2e8f0; border-radius: 14px; padding: 28px 24px; box-shadow: 0 14px 36px rgba(2, 26, 43, 0.14); position: relative; z-index: 2; }
+                    .section-title { margin: 0 0 4px; color: #0f172a; font-size: 20px; }
+                    .section-subtitle { margin: 0 0 20px; color: #64748b; font-size: 13px; }
+                    .line { border-top: 1px solid #e2e8f0; margin: 18px 0; }
+                    .text { margin: 0 0 12px; color: #334155; font-size: 14px; line-height: 1.65; }
+                    .highlight { color: #004564; font-weight: 700; }
+                    .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin: 16px 0; }
+                    .info-item { margin: 8px 0; color: #334155; font-size: 14px; line-height: 1.5; }
+                    .info-icon { display: inline-block; width: 18px; color: #1a5874; font-weight: 700; }
+                    .cta-wrap { text-align: center; margin: 24px 0 6px; }
+                    .cta { display: inline-block; text-decoration: none; background: linear-gradient(135deg, #ff8a5a 0%, #f36c6f 100%); color: #ffffff; padding: 12px 24px; border-radius: 999px; font-weight: 700; font-size: 14px; }
+                    .footer { text-align: center; color: #64748b; font-size: 11px; padding: 18px 22px 26px; }
+                </style>
+            </head>
+            <body>
+                <div class="wrapper">
+                    <div class="hero">
+                        <div class="hero-grid"></div>
+                        <div class="hero-content">
+                            <p class="brand">Vix Cursos</p>
+                            <p class="subtitle">Prefeitura de Vitoria</p>
+                        </div>
+                        ${camadaPonte}
+                    </div>
+
+                    <div class="card">
+                        <h2 class="section-title">${tituloSecao}</h2>
+                        <p class="section-subtitle">${subtituloSecao}</p>
+                        ${conteudoHtml}
+                    </div>
+
+                    <div class="footer">
+                        <p style="margin:0;">Vix Cursos | Prefeitura de Vitoria</p>
+                        <p style="margin:6px 0 0;">Mensagem automatica. Nao responda este e-mail.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+    }
+
     function montarEmailDisponibilidade({ nome, curso, perfil }) {
         const link = montarLinkPreInscricao(curso);
+        const anexos = montarAnexosEmailPadrao();
+
+        const conteudoHtml = `
+            <p class="text">Ola, <span class="highlight">${nome}</span>.</p>
+            <p class="text">Encontramos uma oportunidade alinhada ao seu perfil para o curso <span class="highlight">${curso.nome || "Qualificacao"}</span>.</p>
+
+            <div class="info-box">
+                <p class="info-item"><span class="info-icon">&#9679;</span><strong>Perfil:</strong> ${perfil || "Geral"}</p>
+                <p class="info-item"><span class="info-icon">&#9679;</span><strong>Local:</strong> ${curso.local || "A definir"}</p>
+                ${curso.data_inicio && curso.data_termino ? `<p class="info-item"><span class="info-icon">&#9679;</span><strong>Periodo:</strong> ${curso.data_inicio} a ${curso.data_termino}</p>` : ""}
+                ${curso.horario_inicio && curso.horario_termino ? `<p class="info-item"><span class="info-icon">&#9679;</span><strong>Horario:</strong> ${curso.horario_inicio}h as ${curso.horario_termino}h</p>` : ""}
+            </div>
+
+            <div class="cta-wrap">
+                <a href="${link}" class="cta">Fazer pre-inscricao</a>
+            </div>
+        `;
+
         return {
             subject: `Curso disponível: ${curso.nome || 'Nova oportunidade'}`,
-            html: `
-                <!DOCTYPE html>
-                <html lang="pt-BR">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <style>
-                        body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #FDFBF9; }
-                        .email-wrapper { max-width: 600px; margin: 0 auto; background: #FDFBF9; }
-                        .header { background: linear-gradient(135deg, #004564 0%, #1a5874 100%); padding: 40px 30px; text-align: center; }
-                        .header h1 { color: #fff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-                        .header p { color: #e0f2fe; margin: 8px 0 0; font-size: 12px; letter-spacing: 1px; opacity: 0.9; }
-                        .content { background: #fff; padding: 40px 35px; margin: 20px 20px 0; border-radius: 8px; }
-                        .greeting { font-size: 15px; color: #1e293b; margin: 0 0 20px; line-height: 1.6; font-weight: 500; }
-                        .greeting strong { color: #004564; font-weight: 700; }
-                        .intro-text { font-size: 14px; color: #555; margin: 0 0 30px; line-height: 1.7; }
-                        .intro-text strong { color: #004564; font-weight: 600; }
-                        .course-box { background: #FDFBF9; padding: 20px; margin: 30px 0; border-radius: 6px; border: 1px solid #e5e7eb; }
-                        .course-row { display: flex; margin: 12px 0; font-size: 14px; }
-                        .course-row-icon { color: #1a5874; font-weight: 600; margin-right: 12px; min-width: 24px; }
-                        .course-row-text { color: #555; }
-                        .course-row-text strong { color: #004564; font-weight: 600; display: block; }
-                        .cta-section { text-align: center; margin: 35px 0; }
-                        .cta-button { display: inline-block; background: linear-gradient(135deg, #FF8A5A 0%, #F36C6F 100%); color: #fff; padding: 14px 36px; text-decoration: none; font-weight: 600; border-radius: 6px; font-size: 15px; transition: all 0.2s; border: none; cursor: pointer; }
-                        .cta-button:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(255, 138, 90, 0.25); }
-                        .footer { background: transparent; padding: 25px 35px; text-align: center; font-size: 11px; color: #888; }
-                        .footer p { margin: 4px 0; }
-                    </style>
-                </head>
-                <body>
-                    <div class="email-wrapper">
-                        <div class="header">
-                            <h1>Vix Cursos</h1>
-                            <p>Portal de Qualificação Profissional</p>
-                        </div>
-                        
-                        <div class="content">
-                            <p class="greeting">Olá, <strong>${nome}</strong></p>
-                            <p class="intro-text">O curso de <strong>${curso.nome || 'Qualificação'}</strong> que combina com seu perfil está aberto para inscrições.</p>
-                            
-                            <div class="course-box">
-                                ${curso.local ? `<div class="course-row">
-                                    <span class="course-row-icon">●</span>
-                                    <span class="course-row-text"><strong>Local</strong> ${curso.local}</span>
-                                </div>` : ''}
-                                ${curso.data_inicio && curso.data_termino ? `<div class="course-row">
-                                    <span class="course-row-icon">●</span>
-                                    <span class="course-row-text"><strong>Período</strong> ${curso.data_inicio} a ${curso.data_termino}</span>
-                                </div>` : ''}
-                                ${curso.horario_inicio && curso.horario_termino ? `<div class="course-row">
-                                    <span class="course-row-icon">●</span>
-                                    <span class="course-row-text"><strong>Horário</strong> ${curso.horario_inicio}h às ${curso.horario_termino}h</span>
-                                </div>` : ''}
-                                ${perfil ? `<div class="course-row">
-                                    <span class="course-row-icon">●</span>
-                                    <span class="course-row-text"><strong>Seu Perfil</strong> ${perfil}</span>
-                                </div>` : ''}
-                            </div>
-                            
-                            <div class="cta-section">
-                                <a href="${link}" class="cta-button">Fazer Pré-inscrição</a>
-                            </div>
-                            
-                            <p style="font-size: 13px; color: #888; text-align: center; margin-top: 5px; padding-top: 0;">Clique acima para se inscrever neste curso</p>
-                        </div>
-                        
-                        <div class="footer">
-                            <p>Vix Cursos | Prefeitura de Vitória</p>
-                            <p style="margin-top: 8px;">Este é um aviso automático. Não responda este e-mail.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `
+            html: montarLayoutEmailBase({
+                tituloSecao: "Curso disponivel para inscricao",
+                subtituloSecao: "Aviso de oportunidade",
+                conteudoHtml,
+                exibirPonte: anexos.length > 0
+            }),
+            attachments: anexos
         };
     }
 
@@ -581,7 +610,8 @@ async function createApp() {
                     from: EMAIL_FROM,
                     to: interessado.email,
                     subject: emailPayload.subject,
-                    html: emailPayload.html
+                    html: emailPayload.html,
+                    attachments: emailPayload.attachments || []
                 })
                 : Promise.reject(new Error("smtp-indisponivel")),
             enviarMensagemTwilio({ telefone: interessado.whatsapp, mensagem: smsMensagem })
@@ -762,85 +792,31 @@ async function createApp() {
             throw new Error("smtp-indisponivel");
         }
 
+        const anexos = montarAnexosEmailPadrao();
+        const conteudoHtml = `
+            <p class="text">Ola, <span class="highlight">${nome}</span>.</p>
+            <p class="text">Recebemos sua pre-inscricao no curso <span class="highlight">${cursoNome}</span>.</p>
+
+            <div class="info-box">
+                <p class="info-item"><span class="info-icon">&#9679;</span><strong>Protocolo:</strong> ${protocolo}</p>
+                <p class="info-item"><span class="info-icon">&#9679;</span><strong>Status:</strong> Em analise</p>
+            </div>
+
+            <div class="line"></div>
+            <p class="text">Sua inscricao sera validada e voce recebera novo aviso por e-mail assim que a matricula for confirmada.</p>
+        `;
+
         await mailer.sendMail({
             from: EMAIL_FROM,
             to: email,
             subject: `Pré-inscrição recebida - ${cursoNome}`,
-            html: `
-                <!DOCTYPE html>
-                <html lang="pt-BR">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <style>
-                        body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #FDFBF9; }
-                        .email-wrapper { max-width: 600px; margin: 0 auto; background: #FDFBF9; }
-                        .header { background: linear-gradient(135deg, #004564 0%, #1a5874 100%); padding: 40px 30px; text-align: center; }
-                        .header h1 { color: #fff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-                        .header p { color: #e0f2fe; margin: 8px 0 0; font-size: 12px; letter-spacing: 1px; opacity: 0.9; }
-                        .content { background: #fff; padding: 40px 35px; margin: 20px 20px 0; border-radius: 8px; }
-                        .status-box { background: linear-gradient(135deg, #FF8A5A 0%, #F36C6F 100%); color: #fff; padding: 25px; border-radius: 6px; text-align: center; margin-bottom: 30px; }
-                        .status-box-icon { font-size: 32px; margin-bottom: 12px; display: block; }
-                        .status-box-text { font-size: 16px; font-weight: 600; margin: 0; }
-                        .greeting { font-size: 15px; color: #1e293b; margin: 0 0 20px; line-height: 1.6; font-weight: 500; }
-                        .greeting strong { color: #004564; font-weight: 700; }
-                        .intro-text { font-size: 14px; color: #555; margin: 0 0 25px; line-height: 1.7; }
-                        .intro-text strong { color: #004564; font-weight: 600; }\n                        .protocol-box { background: #f0f9ff; border: 1px solid #e0e7ff; padding: 18px; margin: 25px 0; border-radius: 6px; text-align: center; }
-                        .protocol-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
-                        .protocol-value { font-size: 18px; font-weight: 700; color: #004564; margin-top: 6px; font-family: 'Courier New', monospace; letter-spacing: 1px; }
-                        .info-text { font-size: 14px; color: #555; line-height: 1.7; margin: 0 0 15px; }
-                        .next-steps { background: #FDFBF9; padding: 20px; border-radius: 6px; margin: 25px 0; border: 1px solid #e5e7eb; }
-                        .next-steps p { margin: 0 0 12px; font-size: 13px; color: #666; font-weight: 500; }
-                        .next-steps-list { list-style: none; padding: 0; margin: 0; }
-                        .next-steps-list li { padding: 8px 0; font-size: 13px; color: #555; padding-left: 20px; position: relative; }
-                        .next-steps-list li:before { content: \"●\"; position: absolute; left: 0; color: #004564; font-weight: 700; }
-                        .footer { background: transparent; padding: 25px 35px; text-align: center; font-size: 11px; color: #888; }
-                        .footer p { margin: 4px 0; }
-                    </style>
-                </head>
-                <body>
-                    <div class="email-wrapper">
-                        <div class="header">
-                            <h1>Vix Cursos</h1>
-                            <p>Portal de Qualificação Profissional</p>
-                        </div>
-                        
-                        <div class="content">
-                            <div class="status-box">
-                                <span class="status-box-icon\">·</span>
-                                <p class="status-box-text\">Pré-inscrição Recebida</p>
-                            </div>
-                            
-                            <p class="greeting\">Olá, <strong>${nome}</strong></p>
-                            <p class="intro-text\">Sua pré-inscrição no curso de <strong>${cursoNome}</strong> foi registrada com sucesso.</p>
-                            
-                            <div class=\"protocol-box\">
-                                <div class=\"protocol-label\">Número de Protocolo</div>
-                                <div class=\"protocol-value\">${protocolo}</div>
-                            </div>
-                            
-                            <p class=\"info-text\" style=\"margin-bottom: 20px;\">Mantenha este número consigo. Você pode precisar dele para consultar o status da sua inscrição.</p>
-                            
-                            <div class=\"next-steps\">
-                                <p>Próximos passos:</p>
-                                <ul class=\"next-steps-list\">
-                                    <li>Análise dos dados da inscrição</li>
-                                    <li>Validação das informações</li>
-                                    <li>Confirmação da matrícula</li>
-                                </ul>
-                            </div>
-                            
-                            <p class=\"info-text\">Você receberá um e-mail quando sua matrícula for confirmada. Verifique também sua pasta de spam.</p>
-                        </div>
-                        
-                        <div class=\"footer\">
-                            <p>Vix Cursos | Prefeitura de Vitória</p>
-                            <p style=\"margin-top: 8px;\">Este é um aviso automático. Não responda este e-mail.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `
+            html: montarLayoutEmailBase({
+                tituloSecao: "Pre-inscricao recebida",
+                subtituloSecao: "Confirmacao de registro",
+                conteudoHtml,
+                exibirPonte: anexos.length > 0
+            }),
+            attachments: anexos
         });
     }
 
@@ -849,102 +825,33 @@ async function createApp() {
             throw new Error("smtp-indisponivel");
         }
 
+        const anexos = montarAnexosEmailPadrao();
+        const conteudoHtml = `
+            <p class="text">Ola, <span class="highlight">${nome}</span>.</p>
+            <p class="text">Sua matricula no curso <span class="highlight">${cursoNome}</span> foi confirmada.</p>
+
+            <div class="info-box">
+                <p class="info-item"><span class="info-icon">&#9679;</span><strong>Protocolo:</strong> ${protocolo}</p>
+                ${dataInicio && dataTermino ? `<p class="info-item"><span class="info-icon">&#9679;</span><strong>Periodo:</strong> ${dataInicio} a ${dataTermino}</p>` : ""}
+                ${horaInicio && horaTermino ? `<p class="info-item"><span class="info-icon">&#9679;</span><strong>Horario:</strong> ${horaInicio}h as ${horaTermino}h</p>` : ""}
+                ${local ? `<p class="info-item"><span class="info-icon">&#9679;</span><strong>Local:</strong> ${local}</p>` : ""}
+            </div>
+
+            <div class="line"></div>
+            <p class="text"><span class="highlight">Importante:</span> menores de idade devem estar acompanhados do responsavel legal.</p>
+        `;
+
         await mailer.sendMail({
             from: EMAIL_FROM,
             to: email,
             subject: `Matrícula Confirmada - ${cursoNome}`,
-            html: `
-                <!DOCTYPE html>
-                <html lang="pt-BR">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <style>
-                        body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #FDFBF9; }
-                        .email-wrapper { max-width: 600px; margin: 0 auto; background: #FDFBF9; }
-                        .header { background: linear-gradient(135deg, #004564 0%, #1a5874 100%); padding: 40px 30px; text-align: center; }
-                        .header h1 { color: #fff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-                        .header p { color: #e0f2fe; margin: 8px 0 0; font-size: 12px; letter-spacing: 1px; opacity: 0.9; }
-                        .content { background: #fff; padding: 40px 35px; margin: 20px 20px 0; border-radius: 8px; }
-                        .status-box { background: linear-gradient(135deg, #FF8A5A 0%, #F36C6F 100%); color: #fff; padding: 25px; border-radius: 6px; text-align: center; margin-bottom: 30px; }
-                        .status-box-icon { font-size: 32px; margin-bottom: 12px; display: block; }
-                        .status-box-text { font-size: 16px; font-weight: 600; margin: 0; }
-                        .greeting { font-size: 15px; color: #1e293b; margin: 0 0 20px; line-height: 1.6; font-weight: 500; }
-                        .greeting strong { color: #004564; font-weight: 700; }
-                        .intro-text { font-size: 14px; color: #555; margin: 0 0 25px; line-height: 1.7; }
-                        .intro-text strong { color: #004564; font-weight: 600; }
-                        .course-details { background: #f0f9ff; border: 1px solid #e0e7ff; padding: 20px; margin: 25px 0; border-radius: 6px; }
-                        .detail-item { margin: 14px 0; }
-                        .detail-item:last-child { margin-bottom: 0; }
-                        .detail-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
-                        .detail-value { font-size: 14px; font-weight: 600; color: #004564; margin-top: 4px; }
-                        .protocol-box { background: #f8f4f0; border: 1px solid #e5ddd5; padding: 16px; margin: 25px 0; border-radius: 6px; text-align: center; }
-                        .protocol-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
-                        .protocol-value { font-size: 17px; font-weight: 700; color: #004564; margin-top: 6px; font-family: 'Courier New', monospace; letter-spacing: 1px; }
-                        .info-text { font-size: 14px; color: #555; line-height: 1.7; margin: 0 0 15px; }
-                        .alert-box { background: #fffbf0; border: 1px solid #fbe3d1; padding: 15px; margin: 20px 0; border-radius: 6px; }
-                        .alert-item { font-size: 13px; color: #666; line-height: 1.5; margin: 8px 0; }
-                        .alert-item strong { color: #d97706; font-weight: 600; }
-                        .footer { background: transparent; padding: 25px 35px; text-align: center; font-size: 11px; color: #888; }
-                        .footer p { margin: 4px 0; }
-                    </style>
-                </head>
-                <body>
-                    <div class="email-wrapper">
-                        <div class="header">
-                            <h1>Vix Cursos</h1>
-                            <p>Portal de Qualificação Profissional</p>
-                        </div>
-                        
-                        <div class="content">
-                            <div class="status-box">
-                                <span class="status-box-icon">·</span>
-                                <p class="status-box-text">Matrícula Confirmada</p>
-                            </div>
-                            
-                            <p class="greeting">Olá, <strong>${nome}</strong></p>
-                            <p class="intro-text">Sua matrícula no curso de <strong>${cursoNome}</strong> foi confirmada.</p>
-                            
-                            <div class="course-details">
-                                <div class="detail-item">
-                                    <div class="detail-label">Curso</div>
-                                    <div class="detail-value">${cursoNome}</div>
-                                </div>
-                                ${dataInicio && dataTermino ? `<div class="detail-item">
-                                    <div class="detail-label">Período</div>
-                                    <div class="detail-value">${dataInicio} a ${dataTermino}</div>
-                                </div>` : ''}
-                                ${horaInicio && horaTermino ? `<div class="detail-item">
-                                    <div class="detail-label">Horário</div>
-                                    <div class="detail-value">${horaInicio}h às ${horaTermino}h</div>
-                                </div>` : ''}
-                                ${local ? `<div class="detail-item">
-                                    <div class="detail-label">Local</div>
-                                    <div class="detail-value">${local}</div>
-                                </div>` : ''}
-                            </div>
-                            
-                            <div class="protocol-box">
-                                <div class="protocol-label">Número de Protocolo</div>
-                                <div class="protocol-value">${protocolo}</div>
-                            </div>
-                            
-                            <div class="alert-box">
-                                <div class="alert-item"><strong>Importante:</strong> Menores de idade devem estar acompanhados do responsável legal.</div>
-                                <div class="alert-item"><strong>Dica:</strong> Salve este e-mail para apresentar no primeiro dia.</div>
-                            </div>
-                            
-                            <p class="info-text">Qualquer dúvida, consulte nosso site ou entre em contato com a equipe.</p>
-                        </div>
-                        
-                        <div class="footer">
-                            <p>Vix Cursos | Prefeitura de Vitória</p>
-                            <p style="margin-top: 8px;">Este é um aviso automático. Não responda este e-mail.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `
+            html: montarLayoutEmailBase({
+                tituloSecao: "Matricula confirmada",
+                subtituloSecao: "Dados da turma",
+                conteudoHtml,
+                exibirPonte: anexos.length > 0
+            }),
+            attachments: anexos
         });
     }
 
