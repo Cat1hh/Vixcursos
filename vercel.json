@@ -5,10 +5,66 @@
       "includeFiles": "public/**"
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index.js"
+      "src": "^/$",
+      "dest": "/public/pages/index.html"
+    },
+    {
+      "src": "^/detalhes$",
+      "dest": "/public/pages/detalhes.html"
+    },
+    {
+      "src": "^/informacoes$",
+      "dest": "/public/pages/informacoes.html"
+    },
+    {
+      "src": "^/pre_inscricao$",
+      "dest": "/public/pages/pre_inscricao.html"
+    },
+    {
+      "src": "^/admin/(.*)$",
+      "dest": "/public/admin/$1"
+    },
+    {
+      "src": "^/css/(.*)$",
+      "dest": "/public/css/$1"
+    },
+    {
+      "src": "^/css_adm/(.*)$",
+      "dest": "/public/admin/css_adm/$1"
+    },
+    {
+      "src": "^/script/(.*)$",
+      "dest": "/public/script/$1"
+    },
+    {
+      "src": "^/imagem/(.*)$",
+      "dest": "/public/imagem/$1"
+    },
+    {
+      "src": "^/pages/(.*)$",
+      "dest": "/public/pages/$1"
+    },
+    {
+      "src": "^/favicon\\.ico$",
+      "dest": "/public/favicon.png"
+    },
+    {
+      "src": "^/favicon\\.png$",
+      "dest": "/public/favicon.png"
+    },
+    {
+      "src": "^/(api|cursos|inscricao|inscritos|chat)(?:/.*)?$",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "^/public/(curso|idade|categoria|modalidade|local)$",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
     }
   ]
 }
