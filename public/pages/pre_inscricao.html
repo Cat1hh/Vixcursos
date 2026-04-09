@@ -10,18 +10,19 @@
            BACKGROUND COM AMBIENT GLOW (LUZES DE FUNDO)
         ========================================================= */
         body {
-            background-color: var(--bg-dark);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background:
+                linear-gradient(120deg, rgba(4, 8, 22, 0.86), rgba(7, 17, 31, 0.74), rgba(11, 23, 48, 0.84)),
+                url("../imagem/terceira_ponte.png") center bottom / cover no-repeat fixed;
+            display: grid;
+            place-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            padding: 22px;
             position: relative;
             overflow: hidden; /* Evita que a luz vaze da tela */
         }
 
-        /* Bolas de luz no fundo da tela (Igual na tela de detalhes) */
+        /* Bolas de luz no fundo da tela (igual identidade da index) */
         body::before, body::after {
             content: '';
             position: fixed;
@@ -32,19 +33,99 @@
         }
 
         body::before {
-            width: 600px;
-            height: 600px;
-            background: rgba(255, 138, 90, 0.2); /* Laranja */
-            top: -200px;
-            left: -150px;
+            width: 620px;
+            height: 620px;
+            background: rgba(56, 189, 248, 0.22);
+            top: -210px;
+            left: -160px;
         }
 
         body::after {
-            width: 700px;
-            height: 700px;
-            background: rgba(243, 108, 111, 0.15); /* Coral */
+            width: 720px;
+            height: 720px;
+            background: rgba(243, 108, 111, 0.14);
             bottom: -250px;
             right: -200px;
+        }
+
+        .page-shell {
+            width: min(1180px, 100%);
+            display: grid;
+            grid-template-columns: minmax(280px, 1fr) minmax(340px, 500px);
+            gap: 22px;
+            align-items: stretch;
+            position: relative;
+            z-index: 1;
+        }
+
+        .enroll-hero {
+            border-radius: 24px;
+            padding: 34px;
+            background:
+                linear-gradient(180deg, rgba(9, 15, 30, 0.78), rgba(6, 10, 22, 0.86)),
+                radial-gradient(circle at 82% 15%, rgba(249, 115, 22, 0.16), transparent 28%);
+            border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            border-radius: 999px;
+            padding: 8px 12px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            color: #cbd5e1;
+            font-size: 12px;
+            letter-spacing: 0.3px;
+            margin-bottom: 14px;
+            background: rgba(15, 23, 42, 0.45);
+        }
+
+        .enroll-hero h1 {
+            margin: 0;
+            color: #f8fafc;
+            font-size: clamp(1.9rem, 3.2vw, 2.9rem);
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            max-width: 13ch;
+        }
+
+        .enroll-hero p {
+            margin: 16px 0 0;
+            color: #cbd5e1;
+            line-height: 1.7;
+            max-width: 58ch;
+        }
+
+        .hero-points {
+            margin-top: 24px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(110px, 1fr));
+            gap: 10px;
+        }
+
+        .point {
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: rgba(8, 14, 28, 0.55);
+            border-radius: 14px;
+            padding: 12px;
+            color: #dbe6f3;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .hero-note {
+            margin-top: 26px;
+            border-top: 1px dashed rgba(148, 163, 184, 0.35);
+            padding-top: 16px;
+            color: #94a3b8;
+            font-size: 13px;
         }
 
         /* =========================================================
@@ -52,8 +133,8 @@
         ========================================================= */
         .app-container {
             width: 100%;
-            max-width: 480px;
-            height: 85vh;
+            max-width: 500px;
+            height: min(88vh, 920px);
             /* Vidro escuro elegante */
             background: rgba(18, 24, 38, 0.75); 
             backdrop-filter: blur(20px);
@@ -63,6 +144,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            justify-self: end;
         }
 
         /* =========================================================
@@ -335,10 +417,24 @@
                 padding: 10px;
             }
 
+            .page-shell {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .enroll-hero {
+                padding: 22px;
+            }
+
+            .hero-points {
+                grid-template-columns: 1fr 1fr;
+            }
+
             .app-container {
                 max-width: 100%;
                 height: 92vh;
                 border-radius: 18px;
+                justify-self: stretch;
             }
         }
 
@@ -346,6 +442,18 @@
             body {
                 align-items: stretch;
                 padding: 0;
+            }
+
+            .enroll-hero {
+                border-radius: 0;
+                border-left: 0;
+                border-right: 0;
+                border-top: 0;
+                padding: 20px 16px;
+            }
+
+            .hero-points {
+                grid-template-columns: 1fr;
             }
 
             .app-container {
@@ -400,8 +508,24 @@
     </style>
 </head>
 <body>
+    <main class="page-shell">
+        <section class="enroll-hero">
+            <div>
+                <div class="eyebrow">Pré-inscrição Assistida</div>
+                <h1>Sua vaga começa aqui.</h1>
+                <p>Preencha os dados com o Vitoruga em uma conversa rápida. O processo é guiado, simples e foi pensado para concluir sua pré-inscrição sem dor de cabeça.</p>
 
-    <div class="app-container">
+                <div class="hero-points">
+                    <div class="point">Atendimento em etapas</div>
+                    <div class="point">Envio de documentos no chat</div>
+                    <div class="point">Confirmação imediata</div>
+                </div>
+            </div>
+
+            <div class="hero-note">Dica: tenha CPF e RG em mãos para agilizar o envio dos documentos.</div>
+        </section>
+
+        <div class="app-container">
         
         <div class="chat-header">
             <img src="../imagem/Vitoruga.png" alt="Assistente Virtual Vix Cursos">
@@ -433,7 +557,8 @@
             </div>
         </div>
 
-    </div>
+        </div>
+    </main>
 
     <script src="../script/pre_inscricao.js"></script>
     <div vw class="enabled">
