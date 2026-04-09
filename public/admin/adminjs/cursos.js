@@ -28,8 +28,8 @@ async function carregarMonitoramento() {
         const cursos = await lerJsonOuLancar(resCursos);
 
         // ── KPIs ──────────────────────────────────────────
-        const totalInscritos = cursos.reduce((acc, c) => acc + (c.inscritos || 0), 0);
-        const totalVagas = cursos.reduce((acc, c) => acc + (c.vagas_restantes || 0), 0);
+        const totalInscritos = cursos.reduce((acc, c) => acc + (Number(c.inscritos) || 0), 0);
+        const totalVagas = cursos.reduce((acc, c) => acc + (Number(c.vagas_restantes) || 0), 0);
         const esgotadas = cursos.filter(c => c.status === 'esgotado').length;
 
         document.getElementById('kpiTotal').textContent = cursos.length;
@@ -43,6 +43,8 @@ async function carregarMonitoramento() {
             tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhuma turma cadastrada.</td></tr>';
         } else {
             tbody.innerHTML = cursos.map(c => {
+                const inscritos = Number(c.inscritos) || 0;
+                const vagasRestantes = Number(c.vagas_restantes) || 0;
                 const badge = c.status === 'esgotado'
                     ? '<span class="badge badge-esgotado">ESGOTADO</span>'
                     : '<span class="badge badge-ativo">ATIVO</span>';
@@ -50,8 +52,8 @@ async function carregarMonitoramento() {
                 <tr>
                     <td><strong>${c.nome}</strong></td>
                     <td class="text-sm text-muted">${c.local}</td>
-                    <td><strong>${c.inscritos}</strong></td>
-                    <td>${c.vagas_restantes}</td>
+                    <td><strong>${inscritos}</strong></td>
+                    <td>${vagasRestantes}</td>
                     <td>${badge}</td>
                 </tr>`;
             }).join('');
@@ -65,8 +67,10 @@ async function carregarMonitoramento() {
         }
 
         listaProgresso.innerHTML = cursos.map(c => {
-            const total = (c.inscritos || 0) + (c.vagas_restantes || 0);
-            const taxa = total > 0 ? Math.round((c.inscritos / total) * 100) : 0;
+            const inscritos = Number(c.inscritos) || 0;
+            const vagasRestantes = Number(c.vagas_restantes) || 0;
+            const total = inscritos + vagasRestantes;
+            const taxa = total > 0 ? Math.round((inscritos / total) * 100) : 0;
             let cor = 'var(--success)';
             if (taxa >= 90) cor = 'var(--danger)';
             else if (taxa >= 70) cor = 'var(--warning)';
