@@ -1903,6 +1903,20 @@ async function createApp() {
         }
     });
 
+    // Listar todos os interessados no Admin
+    app.get('/api/interessados', exigirAuthAdmin, async (req, res) => {
+        try {
+            const [rows] = await db.query(`
+                SELECT id, nome, whatsapp, email, regiao, perfil_curso, status, enviado_em
+                FROM interessados
+                ORDER BY id DESC
+            `);
+            res.json(rows);
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro ao carregar fila de interessados");
+        }
+    });
+
     app.put('/api/interessados/:id/status', exigirAuthAdmin, async (req, res) => {
         try {
             const { status } = req.body;

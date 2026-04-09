@@ -18,6 +18,20 @@ async function carregarInteressados() {
     try {
         // Agora, buscamos a FILA DE INTERESSADOS (Leads)
         const resLeads = await fetch('/api/interessados');
+        if (resLeads.status === 401 || (resLeads.redirected && String(resLeads.url || '').includes('/admin/login.html'))) {
+            window.location.href = '/admin/login.html';
+            return;
+        }
+
+        if (!resLeads.ok) {
+            throw new Error(`http-${resLeads.status}`);
+        }
+
+        const tipo = String(resLeads.headers.get('content-type') || '').toLowerCase();
+        if (!tipo.includes('application/json')) {
+            throw new Error('resposta-nao-json');
+        }
+
         const dados = await resLeads.json();
         
         const tbody = document.querySelector('.tabela-admin tbody');
@@ -62,8 +76,11 @@ async function carregarInteressados() {
             `;
         });
     } catch (e) { 
-        console.error("Erro ao carregar dados:", e); 
-        document.querySelector('.tabela-admin tbody').innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Erro ao carregar banco de dados.</td></tr>';
+        console.error("Erro ao carregar dados:", e);
+        const mensagem = String(e?.message || '').startsWith('http-')
+            ? `Erro ao carregar fila de interessados (${e.message.replace('http-', 'HTTP ')}).`
+            : 'Erro ao carregar banco de dados.';
+        document.querySelector('.tabela-admin tbody').innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">${mensagem}</td></tr>`;
     }
 }
 
