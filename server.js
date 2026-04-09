@@ -924,6 +924,79 @@ async function createApp() {
         return res.json({ authenticated: true, username: payload.username || ADMIN_USERNAME });
     });
 
+    // ============================================================
+    // ENDPOINT DE INICIALIZAÇÃO/REPARO DO BANCO (FORÇADO)
+    // ============================================================
+    app.post("/api/admin/init-db", exigirAuthAdmin, async (req, res) => {
+        try {
+            const alteracoes = [];
+
+            // Forçar criação de colunas usando ALTER TABLE IF NOT EXISTS (simulado)
+            const colunas = [
+                { tabela: "pre_inscricoes", coluna: "cpf", definicao: "VARCHAR(14) NULL" },
+                { tabela: "pre_inscricoes", coluna: "rg", definicao: "VARCHAR(20) NULL" },
+                { tabela: "pre_inscricoes", coluna: "mora_vitoria", definicao: "VARCHAR(3) NULL" },
+                { tabela: "pre_inscricoes", coluna: "escolaridade", definicao: "VARCHAR(80) NULL" },
+                { tabela: "pre_inscricoes", coluna: "cep", definicao: "VARCHAR(12) NULL" },
+                { tabela: "pre_inscricoes", coluna: "numero", definicao: "VARCHAR(20) NULL" },
+                { tabela: "pre_inscricoes", coluna: "rua", definicao: "VARCHAR(150) NULL" },
+                { tabela: "pre_inscricoes", coluna: "bairro", definicao: "VARCHAR(120) NULL" },
+                { tabela: "pre_inscricoes", coluna: "municipio", definicao: "VARCHAR(120) NULL" },
+                { tabela: "pre_inscricoes", coluna: "possui_necessidade_especial", definicao: "VARCHAR(3) NULL" },
+                { tabela: "pre_inscricoes", coluna: "tipo_necessidade_especial", definicao: "VARCHAR(120) NULL" },
+                { tabela: "pre_inscricoes", coluna: "cpf_documento", definicao: "TEXT NULL" },
+                { tabela: "pre_inscricoes", coluna: "rg_documento", definicao: "TEXT NULL" },
+                { tabela: "pre_inscricoes", coluna: "documento_confirmacao", definicao: "TEXT NULL" },
+                { tabela: "pre_inscricoes", coluna: "matricula_confirmada", definicao: "SMALLINT NOT NULL DEFAULT 0" },
+                { tabela: "pre_inscricoes", coluna: "matricula_confirmada_em", definicao: "TIMESTAMP NULL" },
+                { tabela: "interessados", coluna: "enviado_em", definicao: "TIMESTAMP NULL" }
+            ];
+
+            for (const { tabela, coluna, definicao } of colunas) {
+                try {
+                    // Tenta criar a coluna diretamente
+                    await db.query(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${definicao}`);
+                    alteracoes.push(`✓ Criada coluna ${tabela}.${coluna}`);
+                } catch (err) {
+                    // Se falhar por já existir, ignora
+                    if (err && err.code && (err.code === "42701" || err.code === "ER_DUP_FIELDNAME" || String(err.message).includes("already exists"))) {
+                        alteracoes.push(`- Coluna ${tabela}.${coluna} já existe`);
+                    } else {
+                        alteracoes.push(`✗ Erro ao criar ${tabela}.${coluna}: ${err?.message || err}`);
+                    }
+                }
+            }
+
+            // Tentar criar índices
+            const indices = [
+                { nome: "idx_pre_inscricoes_cpf", tabela: "pre_inscricoes", colunas: "cpf", unico: false },
+                { nome: "uk_pre_inscricoes_curso_cpf", tabela: "pre_inscricoes", colunas: "curso_id, cpf", unico: true }
+            ];
+
+            for (const { nome, tabela, colunas, unico } of indices) {
+                try {
+                    if (unico) {
+                        await db.query(`CREATE UNIQUE INDEX ${nome} ON ${tabela} (${colunas})`);
+                    } else {
+                        await db.query(`CREATE INDEX ${nome} ON ${tabela} (${colunas})`);
+                    }
+                    alteracoes.push(`✓ Índice ${nome} criado`);
+                } catch (err) {
+                    if (err && err.code && (err.code === "42P10" || err.code === "ER_DUP_KEY_NAME" || String(err.message).includes("already exists"))) {
+                        alteracoes.push(`- Índice ${nome} já existe`);
+                    } else {
+                        alteracoes.push(`- Não foi possível criar índice ${nome}`);
+                    }
+                }
+            }
+
+            res.json({ status: "ok", alteracoes });
+        } catch (err) {
+            console.error("Erro ao inicializar banco:", err);
+            res.status(500).json({ error: "Erro ao inicializar banco de dados", detalhes: err?.message });
+        }
+    });
+
     const tabelas = {
         curso: "filtro_curso", 
         idade: "filtro_idade",
