@@ -40,6 +40,20 @@
         .detalhe-item span   { display: block; font-size: .72rem; color: #94a3b8; margin-bottom: 4px; }
         .detalhe-item strong { color: #f8fafc; font-size: .9rem; }
         .detalhe-secao  { grid-column: 1 / -1; color: #f9c852; border-bottom: 1px solid #334155; padding-bottom: 5px; margin-top: 12px; font-size: 1rem; font-weight: 700; }
+
+        /* Permite o menu de ações sair da área da tabela sem ser cortado */
+        #telaAlunos .card,
+        #telaAlunos .table-wrap,
+        #telaAlunos table,
+        #telaAlunos tbody,
+        #telaAlunos tr,
+        #telaAlunos td {
+            overflow: visible;
+        }
+
+        #telaAlunos .acoes-dropdown {
+            z-index: 1600;
+        }
     </style>
 </head>
 <body data-auto-refresh="true" data-auto-refresh-seconds="120">
