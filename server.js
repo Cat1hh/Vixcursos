@@ -496,9 +496,13 @@ async function createApp() {
         ];
     }
 
-    function montarLayoutEmailBase({ tituloSecao, subtituloSecao, conteudoHtml, exibirPonte = false }) {
+    function montarLayoutEmailBase({ tituloSecao, subtituloSecao, conteudoHtml, exibirPonte = false, modoPonte = "padrao" }) {
+        const estiloPonte = modoPonte === "cobertura"
+            ? "position:absolute;right:-30px;bottom:-110px;width:760px;max-width:none;opacity:0.38;"
+            : "position:absolute;right:-20px;bottom:-30px;width:360px;max-width:60%;opacity:0.2;";
+
         const camadaPonte = exibirPonte
-            ? `<img src="cid:${EMAIL_BRIDGE_CID}" alt="Terceira Ponte" style="position:absolute;right:-20px;bottom:-30px;width:360px;max-width:60%;opacity:0.2;">`
+            ? `<img src="cid:${EMAIL_BRIDGE_CID}" alt="Terceira Ponte" style="${estiloPonte}">`
             : "";
 
         return `
@@ -849,7 +853,8 @@ async function createApp() {
                 tituloSecao: "Matricula confirmada",
                 subtituloSecao: "Dados da turma",
                 conteudoHtml,
-                exibirPonte: anexos.length > 0
+                exibirPonte: anexos.length > 0,
+                modoPonte: "cobertura"
             }),
             attachments: anexos
         });
