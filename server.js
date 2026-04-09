@@ -47,10 +47,21 @@ const DATABASE_URL_RAW =
     process.env.POSTGRES_PRISMA_URL ||
     process.env.POSTGRES_URL ||
     "";
+const ajustarUrlPgCompat = (valor) => {
+    if (!valor) return "";
+    try {
+        const url = new URL(valor);
+        url.searchParams.set("sslmode", "require");
+        url.searchParams.set("uselibpqcompat", "true");
+        return url.toString();
+    } catch {
+        return valor;
+    }
+};
 const DATABASE_URL_FROM_PARTS = POSTGRES_HOST && POSTGRES_USER
     ? `postgresql://${encodeURIComponent(POSTGRES_USER)}:${encodeURIComponent(POSTGRES_PASSWORD)}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}`
     : "";
-const DATABASE_URL = DATABASE_URL_FROM_PARTS || DATABASE_URL_RAW;
+const DATABASE_URL = ajustarUrlPgCompat(DATABASE_URL_RAW) || DATABASE_URL_FROM_PARTS;
 const DB_SSL_ENABLED = String(process.env.DB_SSL_ENABLED || "true").toLowerCase() !== "false";
 const DB_SSL_REJECT_UNAUTHORIZED = String(process.env.DB_SSL_REJECT_UNAUTHORIZED || "false").toLowerCase() === "true";
 const DB_CONNECT_TIMEOUT = Number(process.env.DB_CONNECT_TIMEOUT || 6000);
