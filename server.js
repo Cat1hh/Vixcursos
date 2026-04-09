@@ -1335,27 +1335,24 @@ async function createApp() {
             `, [result[0].id]);
 
             const info = linhas[0];
+            const cursoCriado = {
+                id: result[0].id,
+                nome: info?.curso || 'Curso',
+                categoria: info?.categoria || 'Geral',
+                local: info?.local || 'A definir',
+                data_inicio: info?.data_inicio || null,
+                data_termino: info?.data_termino || null,
+                horario_inicio: info?.horario_inicio || null,
+                horario_termino: info?.horario_termino || null,
+                status: 'ativo'
+            };
 
-            // TRAVA DE SEGURANÇA: Se o curso não tiver categoria informada, pula a automação de email
-            if (!info || !info.categoria) {
-                return res.json({ status: "ok", msg: "Curso criado (sem avisos automáticos, pois a categoria estava vazia)." });
-            }
+            const totalAvisados = await notificarInteressadosPorCurso(cursoCriado);
 
-                const cursoCriado = {
-                    id: result[0].id,
-                    nome: info.curso || 'Curso',
-                    categoria: info.categoria || 'Geral',
-                    local: info.local || 'A definir',
-                    data_inicio: info.data_inicio || null,
-                    data_termino: info.data_termino || null,
-                    horario_inicio: info.horario_inicio || null,
-                    horario_termino: info.horario_termino || null,
-                    status: 'ativo'
-                };
-
-                await notificarInteressadosPorCurso(cursoCriado);
-
-            res.json({ status: "ok", msg: "Curso criado e avisos processados automaticamente." });
+            res.json({
+                status: "ok",
+                msg: `Curso criado e ${totalAvisados} aviso(s) processado(s) automaticamente.`
+            });
 
         } catch (err) {
             return responderErroBanco(res, err, "Erro na automação:");
