@@ -987,7 +987,21 @@ async function createApp() {
                 LEFT JOIN filtro_modalidade fm ON fm.id = c.modalidade_id
                 LEFT JOIN filtro_local fl ON fl.id = c.local_id
                 LEFT JOIN pre_inscricoes pi ON pi.curso_id = c.id
-                GROUP BY c.id
+                GROUP BY
+                    c.id,
+                    fcurso.curso,
+                    c.vagas,
+                    c.status,
+                    c.horario_inicio,
+                    c.horario_termino,
+                    c.data_inicio,
+                    c.data_termino,
+                    fc.categoria,
+                    fiMin.idade,
+                    fiMax.idade,
+                    fm.modalidade,
+                    fl.local,
+                    c.criado_em
                 ORDER BY c.id DESC
             `;
             const [rows] = await db.query(querySql);
@@ -1035,7 +1049,21 @@ async function createApp() {
                 LEFT JOIN filtro_local fl ON fl.id = c.local_id
                 LEFT JOIN pre_inscricoes pi ON pi.curso_id = c.id
                 WHERE c.id = ?
-                GROUP BY c.id
+                GROUP BY
+                    c.id,
+                    fcurso.curso,
+                    c.vagas,
+                    c.status,
+                    c.horario_inicio,
+                    c.horario_termino,
+                    c.data_inicio,
+                    c.data_termino,
+                    fc.categoria,
+                    fiMin.idade,
+                    fiMax.idade,
+                    fm.modalidade,
+                    fl.local,
+                    c.criado_em
             `;
             const [rows] = await db.query(querySql, [id]);
             
@@ -1705,7 +1733,7 @@ async function createApp() {
                 LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
                 LEFT JOIN filtro_local fl ON fl.id = c.local_id
                 LEFT JOIN pre_inscricoes pi ON pi.curso_id = c.id
-                GROUP BY c.id
+                GROUP BY c.id, fcurso.curso, c.vagas, c.status, fl.local
                 ORDER BY inscritos DESC
             `);
             res.json(rows);
