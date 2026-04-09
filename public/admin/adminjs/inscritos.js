@@ -434,7 +434,8 @@ async function confirmarMatricula(idAluno, nomeAluno) {
         if (data.status === 'ja-confirmada') {
             mostrarPopup('Matrícula já estava confirmada.', 'info');
         } else if (data.email === 'falhou') {
-            mostrarPopup('Matrícula confirmada, mas o e-mail não foi enviado.', 'warning');
+            const detalhe = data.email_erro ? ` Motivo: ${data.email_erro}` : '';
+            mostrarPopup(`Matrícula confirmada, mas o e-mail não foi enviado.${detalhe}`, 'warning');
         } else {
             mostrarPopup('Matrícula confirmada e e-mail enviado!', 'success');
         }

@@ -1,6 +1,6 @@
 const express = require("express");
 const fs = require("fs");
-const mysql = require("mysql2/promise");
+const { Pool } = require("pg");
 const cors = require("cors");
 const path = require("path");
 const nodemailer = require("nodemailer");
@@ -34,16 +34,17 @@ const EMAIL_SOCKET_TIMEOUT = Number(process.env.EMAIL_SOCKET_TIMEOUT || 15000);
 const EMAIL_USER = process.env.EMAIL_USER || "d3bruyn@gmail.com";
 const EMAIL_PASS = process.env.EMAIL_PASS || "uwxghfrgzqdftqzf";
 const EMAIL_FROM = process.env.EMAIL_FROM || `\"Vix Cursos\" <${EMAIL_USER}>`;
-const DB_HOST = process.env.DB_HOST || "34.229.93.210";
-const DB_USER = process.env.DB_USER || "vixcursos";
-const DB_PASSWORD = process.env.DB_PASSWORD || "123*abc";
-const DB_NAME = process.env.DB_NAME || "portal_cursos";
-const DB_PORT = Number(process.env.DB_PORT || 3306);
-const DB_SSL_ENABLED = String(process.env.DB_SSL_ENABLED || "false").toLowerCase() === "true";
-const DB_SSL_REJECT_UNAUTHORIZED = String(process.env.DB_SSL_REJECT_UNAUTHORIZED || "true").toLowerCase() === "true";
+const DATABASE_URL =
+    process.env.DATABASE_URL ||
+    process.env.SUPABASE_DATABASE_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL ||
+    "";
+const DB_SSL_ENABLED = String(process.env.DB_SSL_ENABLED || "true").toLowerCase() !== "false";
+const DB_SSL_REJECT_UNAUTHORIZED = String(process.env.DB_SSL_REJECT_UNAUTHORIZED || "false").toLowerCase() === "true";
 const DB_CONNECT_TIMEOUT = Number(process.env.DB_CONNECT_TIMEOUT || 6000);
 const DB_QUERY_TIMEOUT = Number(process.env.DB_QUERY_TIMEOUT || 7000);
-const DB_WAIT_FOR_CONNECTIONS = String(process.env.DB_WAIT_FOR_CONNECTIONS || "true").toLowerCase() === "true";
 const DB_CONNECTION_LIMIT = Number(process.env.DB_CONNECTION_LIMIT || 10);
 
 const ADMIN_COOKIE_NAME = "porto_admin_token";
@@ -110,6 +111,11 @@ function eErroTimeoutBanco(erro) {
     );
 }
 
+function converterPlaceholdersSql(sql) {
+    let indice = 0;
+    return String(sql || "").replace(/\?/g, () => `$${++indice}`);
+}
+
 function responderErroBanco(res, erro, mensagem) {
     if (eErroTimeoutBanco(erro)) {
         return res.status(503).json({ error: "Banco de dados indisponivel" });
@@ -169,72 +175,65 @@ app.use(express.static(path.join(__dirname, "public")));
 
 async function createApp() {
     // ======================================
-    // MYSQL
+    // POSTGRESQL / SUPABASE
     // ======================================
-    console.log("[db] Iniciando configuracao da pool MySQL");
-    console.log("[db] Host:", DB_HOST);
-    console.log("[db] Port:", DB_PORT);
-    console.log("[db] Database:", DB_NAME);
-    console.log("[db] User:", DB_USER);
+    console.log("[db] Iniciando configuracao da pool PostgreSQL");
+    console.log("[db] Connection limit:", DB_CONNECTION_LIMIT);
     console.log("[db] connectTimeout:", DB_CONNECT_TIMEOUT);
     console.log("[db] queryTimeout:", DB_QUERY_TIMEOUT);
-    console.log("[db] waitForConnections:", DB_WAIT_FOR_CONNECTIONS);
-    console.log("[db] connectionLimit:", DB_CONNECTION_LIMIT);
+    console.log("[db] SSL habilitado:", DB_SSL_ENABLED);
 
-    const db = mysql.createPool({
-        host: DB_HOST,
-        port: DB_PORT,
-        user: DB_USER,
-        password: DB_PASSWORD,
-        database: DB_NAME,
-        connectTimeout: DB_CONNECT_TIMEOUT,
-        waitForConnections: DB_WAIT_FOR_CONNECTIONS,
-        connectionLimit: DB_CONNECTION_LIMIT,
+    const pgPool = new Pool({
+        connectionString: DATABASE_URL || undefined,
+        max: DB_CONNECTION_LIMIT,
+        connectionTimeoutMillis: DB_CONNECT_TIMEOUT,
+        statement_timeout: DB_QUERY_TIMEOUT,
         ssl: DB_SSL_ENABLED
             ? { rejectUnauthorized: DB_SSL_REJECT_UNAUTHORIZED }
-            : undefined
+            : false
     });
 
-    const queryOriginal = db.query.bind(db);
-    db.query = (sql, values) => {
-        if (typeof sql === "string") {
-            return queryOriginal({ sql, timeout: DB_QUERY_TIMEOUT }, values);
+    const db = {
+        query: async (sql, values) => {
+            const text = typeof sql === "string" ? converterPlaceholdersSql(sql) : sql;
+            const result = await pgPool.query(text, values);
+            return [result.rows, result.fields];
+        },
+        getConnection: async () => {
+            const client = await pgPool.connect();
+            return {
+                release: () => client.release()
+            };
         }
-
-        if (sql && typeof sql === "object" && !Array.isArray(sql) && !Object.prototype.hasOwnProperty.call(sql, "timeout")) {
-            return queryOriginal({ timeout: DB_QUERY_TIMEOUT, ...sql }, values);
-        }
-
-        return queryOriginal(sql, values);
     };
 
     let bancoDisponivelNaInicializacao = false;
 
     async function inicializarBanco() {
         try {
-            console.log("[db] Pool MySQL criada, validando conexao...");
+            console.log("[db] Pool PostgreSQL criada, validando conexao...");
             const connection = await db.getConnection();
-            console.log("[db] Conexao MySQL validada com sucesso");
+            console.log("[db] Conexao PostgreSQL validada com sucesso");
             connection.release();
-            console.log("[db] Conexao MySQL liberada de volta para a pool");
+            console.log("[db] Conexao PostgreSQL liberada de volta para a pool");
 
-            await garantirColuna("pre_inscricoes", "cpf", "VARCHAR(14) NULL AFTER telefone");
-            await garantirColuna("pre_inscricoes", "rg", "VARCHAR(20) NULL AFTER cpf");
-            await garantirColuna("pre_inscricoes", "mora_vitoria", "VARCHAR(3) NULL AFTER curso_id");
-            await garantirColuna("pre_inscricoes", "escolaridade", "VARCHAR(80) NULL AFTER mora_vitoria");
-            await garantirColuna("pre_inscricoes", "cep", "VARCHAR(12) NULL AFTER escolaridade");
-            await garantirColuna("pre_inscricoes", "numero", "VARCHAR(20) NULL AFTER cep");
-            await garantirColuna("pre_inscricoes", "rua", "VARCHAR(150) NULL AFTER numero");
-            await garantirColuna("pre_inscricoes", "bairro", "VARCHAR(120) NULL AFTER rua");
-            await garantirColuna("pre_inscricoes", "municipio", "VARCHAR(120) NULL AFTER bairro");
-            await garantirColuna("pre_inscricoes", "possui_necessidade_especial", "VARCHAR(3) NULL AFTER municipio");
-            await garantirColuna("pre_inscricoes", "tipo_necessidade_especial", "VARCHAR(120) NULL AFTER possui_necessidade_especial");
-            await garantirColuna("pre_inscricoes", "cpf_documento", "LONGTEXT NULL AFTER municipio");
-            await garantirColuna("pre_inscricoes", "rg_documento", "LONGTEXT NULL AFTER cpf_documento");
-            await garantirColuna("pre_inscricoes", "documento_confirmacao", "LONGTEXT NULL AFTER municipio");
-            await garantirColuna("pre_inscricoes", "matricula_confirmada", "TINYINT(1) NOT NULL DEFAULT 0 AFTER rg_documento");
-            await garantirColuna("pre_inscricoes", "matricula_confirmada_em", "DATETIME NULL AFTER matricula_confirmada");
-            await garantirColuna("interessados", "enviado_em", "DATETIME NULL AFTER status");
+            await garantirColuna("pre_inscricoes", "cpf", "VARCHAR(14) NULL");
+            await garantirColuna("pre_inscricoes", "rg", "VARCHAR(20) NULL");
+            await garantirColuna("pre_inscricoes", "mora_vitoria", "VARCHAR(3) NULL");
+            await garantirColuna("pre_inscricoes", "escolaridade", "VARCHAR(80) NULL");
+            await garantirColuna("pre_inscricoes", "cep", "VARCHAR(12) NULL");
+            await garantirColuna("pre_inscricoes", "numero", "VARCHAR(20) NULL");
+            await garantirColuna("pre_inscricoes", "rua", "VARCHAR(150) NULL");
+            await garantirColuna("pre_inscricoes", "bairro", "VARCHAR(120) NULL");
+            await garantirColuna("pre_inscricoes", "municipio", "VARCHAR(120) NULL");
+            await garantirColuna("pre_inscricoes", "possui_necessidade_especial", "VARCHAR(3) NULL");
+            await garantirColuna("pre_inscricoes", "tipo_necessidade_especial", "VARCHAR(120) NULL");
+            await garantirColuna("pre_inscricoes", "cpf_documento", "TEXT NULL");
+            await garantirColuna("pre_inscricoes", "rg_documento", "TEXT NULL");
+            await garantirColuna("pre_inscricoes", "documento_confirmacao", "TEXT NULL");
+            await garantirColuna("pre_inscricoes", "matricula_confirmada", "SMALLINT NOT NULL DEFAULT 0");
+            await garantirColuna("pre_inscricoes", "matricula_confirmada_em", "TIMESTAMP NULL");
+            await garantirColuna("interessados", "enviado_em", "TIMESTAMP NULL");
             await garantirIndice("pre_inscricoes", "idx_pre_inscricoes_cpf", "cpf");
             await garantirIndiceUnico("pre_inscricoes", "uk_pre_inscricoes_curso_cpf", "curso_id, cpf");
 
@@ -309,7 +308,7 @@ async function createApp() {
         const [colunas] = await db.query(
             `SELECT COUNT(*) AS total
              FROM INFORMATION_SCHEMA.COLUMNS
-             WHERE TABLE_SCHEMA = DATABASE()
+             WHERE TABLE_SCHEMA = current_schema()
                AND TABLE_NAME = ?
                AND COLUMN_NAME = ?`,
             [tabela, coluna]
@@ -323,10 +322,10 @@ async function createApp() {
     async function garantirIndice(tabela, indice, colunas) {
         const [indices] = await db.query(
             `SELECT COUNT(*) AS total
-             FROM INFORMATION_SCHEMA.STATISTICS
-             WHERE TABLE_SCHEMA = DATABASE()
-               AND TABLE_NAME = ?
-               AND INDEX_NAME = ?`,
+                         FROM pg_indexes
+                         WHERE schemaname = current_schema()
+                             AND tablename = ?
+                             AND indexname = ?`,
             [tabela, indice]
         );
 
@@ -338,10 +337,10 @@ async function createApp() {
     async function garantirIndiceUnico(tabela, indice, colunas) {
         const [indices] = await db.query(
             `SELECT COUNT(*) AS total
-             FROM INFORMATION_SCHEMA.STATISTICS
-             WHERE TABLE_SCHEMA = DATABASE()
-               AND TABLE_NAME = ?
-               AND INDEX_NAME = ?`,
+                         FROM pg_indexes
+                         WHERE schemaname = current_schema()
+                             AND tablename = ?
+                             AND indexname = ?`,
             [tabela, indice]
         );
 
@@ -349,7 +348,7 @@ async function createApp() {
             try {
                 await db.query(`CREATE UNIQUE INDEX ${indice} ON ${tabela} (${colunas})`);
             } catch (err) {
-                if (err && err.code === "ER_DUP_ENTRY") {
+                if (err && (err.code === "23505" || err.code === "ER_DUP_ENTRY")) {
                     const [duplicados] = await db.query(
                         `SELECT curso_id, cpf, COUNT(*) AS total
                          FROM pre_inscricoes
@@ -676,10 +675,10 @@ async function createApp() {
                 COALESCE(fc.curso, 'Curso') AS nome,
                 COALESCE(fc2.categoria, 'Geral') AS categoria,
                 COALESCE(fl.local, 'A definir') AS local,
-                DATE_FORMAT(c.data_inicio, '%d/%m/%Y') AS data_inicio,
-                DATE_FORMAT(c.data_termino, '%d/%m/%Y') AS data_termino,
-                TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio,
-                TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino,
+                TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
+                TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
+                TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio,
+                TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino,
                 c.status
              FROM cursos c
              LEFT JOIN filtro_curso fc ON fc.id = c.curso_id
@@ -944,10 +943,10 @@ async function createApp() {
                     COALESCE(COUNT(pi.id), 0) AS inscritos,
                     (c.vagas - COALESCE(COUNT(pi.id), 0)) AS vagas_disponiveis,
                     c.status,
-                    TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio, 
-                    TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino,
-                    DATE_FORMAT(c.data_inicio, '%d/%m/%Y') AS data_inicio,
-                    DATE_FORMAT(c.data_termino, '%d/%m/%Y') AS data_termino,
+                    TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio, 
+                    TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino,
+                    TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
+                    TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
                     COALESCE(fc.categoria, 'Geral') AS categoria, 
                     COALESCE(fiMin.idade, '-') AS idade_min, 
                     COALESCE(fiMax.idade, '-') AS idade_max,
@@ -991,10 +990,10 @@ async function createApp() {
                     COALESCE(COUNT(pi.id), 0) AS inscritos,
                     (c.vagas - COALESCE(COUNT(pi.id), 0)) AS vagas_disponiveis,
                     c.status,
-                    TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio, 
-                    TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino,
-                    DATE_FORMAT(c.data_inicio, '%d/%m/%Y') AS data_inicio,
-                    DATE_FORMAT(c.data_termino, '%d/%m/%Y') AS data_termino,
+                    TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio, 
+                    TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino,
+                    TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
+                    TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
                     COALESCE(fc.categoria, 'Geral') AS categoria, 
                     COALESCE(fiMin.idade, '-') AS idade_min, 
                     COALESCE(fiMax.idade, '-') AS idade_max,
@@ -1081,10 +1080,10 @@ async function createApp() {
                     COALESCE(fcurso.curso, 'Curso sem nome') AS nome, 
                     c.vagas, 
                     c.status,
-                    TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio, 
-                    TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino,
-                    DATE_FORMAT(c.data_inicio, '%d/%m/%Y') AS data_inicio,
-                    DATE_FORMAT(c.data_termino, '%d/%m/%Y') AS data_termino,
+                    TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio, 
+                    TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino,
+                    TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
+                    TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
                     COALESCE(fc.categoria, 'Geral') AS categoria, 
                     COALESCE(fiMin.idade, '-') AS idade_min, 
                     COALESCE(fiMax.idade, '-') AS idade_max,
@@ -1126,6 +1125,7 @@ async function createApp() {
                 INSERT INTO cursos 
                 (curso_id, vagas, idade_min, idade_max, local_id, modalidade_id, data_inicio, data_termino, horario_inicio, horario_termino, categoria_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id
             `, [
                 curso, vagas || 0, idade_min || null, idade_max || null, 
                 local || null, modalidade || null, data_inicio || null, 
@@ -1136,16 +1136,16 @@ async function createApp() {
             // 2. Procura os nomes reais para o e-mail (usando LEFT JOIN para evitar crash)
             const [linhas] = await db.query(`
                 SELECT f.curso, l.local, cat.categoria,
-                       DATE_FORMAT(c.data_inicio, '%d/%m/%Y') AS data_inicio,
-                       DATE_FORMAT(c.data_termino, '%d/%m/%Y') AS data_termino,
-                       TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio,
-                       TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino
+                       TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
+                       TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
+                       TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio,
+                       TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino
                 FROM cursos c
                 LEFT JOIN filtro_curso f ON c.curso_id = f.id
                 LEFT JOIN filtro_local l ON c.local_id = l.id
                 LEFT JOIN filtro_categoria cat ON c.categoria_id = cat.id
                 WHERE c.id = ?
-            `, [result.insertId]);
+            `, [result[0].id]);
 
             const info = linhas[0];
 
@@ -1155,7 +1155,7 @@ async function createApp() {
             }
 
                 const cursoCriado = {
-                    id: result.insertId,
+                    id: result[0].id,
                     nome: info.curso || 'Curso',
                     categoria: info.categoria || 'Geral',
                     local: info.local || 'A definir',
@@ -1243,10 +1243,10 @@ async function createApp() {
                     c.status,
                     COALESCE(fc.curso, 'Curso') AS nome_curso,
                     COALESCE(fl.local, 'A definir') AS local_nome,
-                    DATE_FORMAT(c.data_inicio, '%d/%m/%Y') AS data_inicio,
-                    DATE_FORMAT(c.data_termino, '%d/%m/%Y') AS data_termino,
-                    TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio,
-                    TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino
+                    TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
+                    TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
+                    TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio,
+                    TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino
                 FROM cursos c
                 LEFT JOIN filtro_curso fc ON fc.id = c.curso_id
                 LEFT JOIN filtro_local fl ON fl.id = c.local_id
@@ -1308,6 +1308,7 @@ async function createApp() {
                     rg_documento
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id
             `, [
                 nome,
                 email,
@@ -1328,7 +1329,7 @@ async function createApp() {
                 rg_documento
             ]);
 
-            const protocolo = gerarProtocoloInscricao(insertResult.insertId);
+            const protocolo = gerarProtocoloInscricao(insertResult[0].id);
 
             // Atualizar vagas e status: quando as vagas chegam a 0, marca como esgotado
             const novasVagas = vagasDisponiveis - 1;
@@ -1376,7 +1377,7 @@ async function createApp() {
                 notificacoes
             });
         } catch (err) {
-            if (err && err.code === "ER_DUP_ENTRY") {
+            if (err && (err.code === "23505" || err.code === "ER_DUP_ENTRY")) {
                 return res.status(409).json({
                     error: "Você já possui pré-inscrição para este curso com este CPF."
                 });
@@ -1402,10 +1403,10 @@ async function createApp() {
                     telefone,
                     cpf,
                     rg,
-                    mora_vitoria,
-                    escolaridade,
-                    cep,
-                    numero,
+                    TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
+                    TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
+                    TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio,
+                    TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino
                     rua,
                     bairro,
                     municipio,
@@ -1486,10 +1487,10 @@ async function createApp() {
                     pi.matricula_confirmada,
                     COALESCE(fc.curso, 'Curso') AS curso_nome,
                     COALESCE(fl.local, 'A definir') AS local_nome,
-                    DATE_FORMAT(c.data_inicio, '%d/%m/%Y') AS data_inicio,
-                    DATE_FORMAT(c.data_termino, '%d/%m/%Y') AS data_termino,
-                    TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio,
-                    TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino
+                    TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
+                    TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
+                    TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio,
+                    TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino
                  FROM pre_inscricoes pi
                  LEFT JOIN cursos c ON c.id = pi.curso_id
                  LEFT JOIN filtro_curso fc ON fc.id = c.curso_id
@@ -1570,10 +1571,10 @@ async function createApp() {
                     COALESCE(fcurso.curso, 'Curso') AS nome,
                     COALESCE(fc.categoria, 'Geral') AS categoria,
                     COALESCE(fl.local, 'A definir') AS local,
-                    DATE_FORMAT(c.data_inicio, '%d/%m/%Y') AS data_inicio,
-                    DATE_FORMAT(c.data_termino, '%d/%m/%Y') AS data_termino,
-                    TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio,
-                    TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino,
+                    TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
+                    TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
+                    TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio,
+                    TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino,
                     c.status
                 FROM cursos c
                 LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
@@ -1607,10 +1608,11 @@ async function createApp() {
             const [resultado] = await db.query(`
                 INSERT INTO interessados (nome, whatsapp, email, regiao, perfil_curso) 
                 VALUES (?, ?, ?, ?, ?)
+                RETURNING id
             `, [nome, whatsapp, email, regiao, perfil]);
 
             await notificarNovoLeadSeHouverCursoAtivo({
-                id: resultado.insertId,
+                id: resultado[0].id,
                 nome,
                 whatsapp,
                 email,
@@ -1776,7 +1778,7 @@ async function createApp() {
             const vagasHoje = rowsVagas[0].totais || 0;
 
             // 2. Conta quantas inscrições (vagas preenchidas) foram feitas no ano de 2026
-            const [rowsInscricoes] = await db.query(`SELECT COUNT(id) AS preenchidas FROM pre_inscricoes WHERE YEAR(criado_em) = 2026`);
+            const [rowsInscricoes] = await db.query(`SELECT COUNT(id) AS preenchidas FROM pre_inscricoes WHERE EXTRACT(YEAR FROM criado_em) = 2026`);
             const vagas2026 = rowsInscricoes[0].preenchidas || 0;
 
             res.json({ vagasHoje, vagas2026 });
@@ -1793,10 +1795,10 @@ async function createApp() {
             const [rows] = await db.query(`
                 SELECT 
                     c.id, fcurso.curso AS nome, c.vagas, c.status,
-                    TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio,
-                    TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino,
-                    DATE_FORMAT(c.data_inicio, '%d/%m/%Y') AS data_inicio,
-                    DATE_FORMAT(c.data_termino, '%d/%m/%Y') AS data_termino,
+                    TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio,
+                    TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino,
+                    TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
+                    TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
                     fl.local, fm.modalidade, fc.categoria
                 FROM cursos c
                 LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
