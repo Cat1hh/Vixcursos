@@ -483,16 +483,75 @@ async function createApp() {
         return {
             subject: `📢 Curso disponível: ${curso.nome || 'Nova oportunidade'}`,
             html: `
-                <div style="font-family:Arial,Helvetica,sans-serif;max-width:680px;margin:0 auto;padding:24px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;line-height:1.6;color:#111827;">
-                    <p style="margin:0 0 14px;">Olá, <strong>${nome}</strong>!</p>
-                    <p style="margin:0 0 14px;">O curso de <strong>${curso.nome || 'Qualificação'}</strong> que combina com o seu perfil de <strong>${perfil}</strong> está disponível.</p>
-                    <p style="margin:0 0 14px;">📍 Local: ${curso.local || 'A definir'}</p>
-                    ${curso.data_inicio && curso.data_termino ? `<p style="margin:0 0 14px;">🗓️ Período: ${curso.data_inicio} a ${curso.data_termino}</p>` : ''}
-                    ${curso.horario_inicio && curso.horario_termino ? `<p style="margin:0 0 18px;">⏰ Horário: ${curso.horario_inicio}h às ${curso.horario_termino}h</p>` : ''}
-                    <p style="margin:0 0 18px;">Clique no botão abaixo para acessar e fazer sua pré-inscrição.</p>
-                    <a href="${link}" style="display:inline-block;background:#0f2247;color:#fff;padding:12px 22px;text-decoration:none;font-weight:700;border-radius:10px;">Acessar Pré-inscrição</a>
-                    <p style="font-size:12px;color:#6b7280;margin-top:20px;">Este é um aviso automático do sistema Vix Cursos.</p>
-                </div>
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+                        .email-wrapper { max-width: 600px; margin: 0 auto; background: #f5f5f5; }
+                        .header { background: linear-gradient(135deg, #004564 0%, #1a5874 100%); padding: 30px 20px; text-align: center; }
+                        .header h1 { color: #fff; margin: 0; font-size: 28px; font-weight: 700; }
+                        .header p { color: #e0f2fe; margin: 5px 0 0; font-size: 13px; letter-spacing: 1px; }
+                        .content { background: #fff; padding: 40px 30px; margin: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                        .greeting { font-size: 16px; color: #1e293b; margin: 0 0 20px; line-height: 1.6; }
+                        .greeting strong { color: #004564; }
+                        .course-info { background: #f8fafc; border-left: 4px solid #FF8A5A; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                        .course-info p { margin: 10px 0; color: #333; font-size: 14px; }
+                        .course-info strong { color: #004564; }
+                        .info-item { display: flex; align-items: flex-start; margin: 12px 0; }
+                        .info-item span { margin-right: 10px; font-size: 16px; }
+                        .info-item p { margin: 0; color: #555; font-size: 14px; }
+                        .cta-section { text-align: center; margin: 30px 0; }
+                        .cta-button { display: inline-block; background: linear-gradient(135deg, #FF8A5A 0%, #F36C6F 100%); color: #fff; padding: 15px 40px; text-decoration: none; font-weight: 700; border-radius: 8px; font-size: 16px; transition: transform 0.2s, box-shadow 0.2s; }
+                        .cta-button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(255, 138, 90, 0.3); }
+                        .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #e0e0e0; margin: 20px 0 0; }
+                        .footer p { margin: 5px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="email-wrapper">
+                        <div class="header">
+                            <h1>🎓 Vix Cursos</h1>
+                            <p>Sua oportunidade chegou</p>
+                        </div>
+                        
+                        <div class="content">
+                            <p class="greeting">Olá, <strong>${nome}</strong>!</p>
+                            <p style="font-size: 15px; color: #555; margin: 0 0 25px; line-height: 1.6;">Temos uma ótima notícia! O curso de <strong style="color: #004564;">${curso.nome || 'Qualificação'}</strong> que combina perfeitamente com o seu perfil de <strong style="color: #004564;">${perfil}</strong> está disponível agora mesmo!</p>
+                            
+                            <div class="course-info">
+                                <div class="info-item">
+                                    <span>📍</span>
+                                    <p><strong>Local:</strong> ${curso.local || 'A definir'}</p>
+                                </div>
+                                ${curso.data_inicio && curso.data_termino ? `<div class="info-item">
+                                    <span>📅</span>
+                                    <p><strong>Período:</strong> ${curso.data_inicio} a ${curso.data_termino}</p>
+                                </div>` : ''}
+                                ${curso.horario_inicio && curso.horario_termino ? `<div class="info-item">
+                                    <span>⏰</span>
+                                    <p><strong>Horário:</strong> ${curso.horario_inicio}h às ${curso.horario_termino}h</p>
+                                </div>` : ''}
+                            </div>
+                            
+                            <p style="font-size: 15px; color: #555; line-height: 1.6;">Não deixe essa oportunidade passar! Clique no botão abaixo para fazer sua pré-inscrição agora:</p>
+                            
+                            <div class="cta-section">
+                                <a href="${link}" class="cta-button">Fazer Pré-inscrição →</a>
+                            </div>
+                            
+                            <p style="font-size: 13px; color: #888; margin-top: 25px; padding-top: 20px; border-top: 1px solid #e0e0e0;">Dúvidas? Entre em contato conosco através do nosso site.</p>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>© 2026 Vix Cursos - Todos os direitos reservados</p>
+                            <p>Este é um aviso automatizado do sistema. Por favor, não responda este e-mail.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
             `
         };
     }
@@ -703,16 +762,80 @@ async function createApp() {
         await mailer.sendMail({
             from: EMAIL_FROM,
             to: email,
-            subject: `Pré-inscrição recebida - ${cursoNome}`,
+            subject: `✅ Pré-inscrição recebida - ${cursoNome}`,
             html: `
-                <div style="font-family:Arial,Helvetica,sans-serif;max-width:680px;margin:0 auto;padding:24px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;line-height:1.6;color:#111827;">
-                    <p style="margin:0 0 14px;">Olá, <strong>${nome}</strong>!</p>
-                    <p style="margin:0 0 14px;">Recebemos sua pré-inscrição no curso de <strong>${cursoNome}</strong>.</p>
-                    <p style="margin:0 0 14px;"><strong>Protocolo:</strong> ${protocolo}</p>
-                    <p style="margin:0 0 14px;">Estamos validando seus dados. Fique atento ao seu e-mail para quando confirmarmos sua matrícula.</p>
-                    <p style="margin:0 0 14px;">Assim que a validação for concluída, você receberá a confirmação oficial por este canal.</p>
-                    <p style="margin:0;font-size:12px;color:#6b7280;">Mensagem automatica do sistema Vix Cursos.</p>
-                </div>
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+                        .email-wrapper { max-width: 600px; margin: 0 auto; background: #f5f5f5; }
+                        .header { background: linear-gradient(135deg, #004564 0%, #1a5874 100%); padding: 30px 20px; text-align: center; }
+                        .header h1 { color: #fff; margin: 0; font-size: 28px; font-weight: 700; }
+                        .header p { color: #e0f2fe; margin: 5px 0 0; font-size: 13px; letter-spacing: 1px; }
+                        .content { background: #fff; padding: 40px 30px; margin: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                        .success-badge { background: linear-gradient(135deg, #FF8A5A 0%, #F36C6F 100%); color: #fff; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 30px; }
+                        .success-badge .icon { font-size: 40px; margin-bottom: 10px; }
+                        .success-badge p { margin: 0; font-size: 18px; font-weight: 700; }
+                        .greeting { font-size: 16px; color: #1e293b; margin: 0 0 20px; line-height: 1.6; }
+                        .greeting strong { color: #004564; }
+                        .protocol-box { background: #f0f9ff; border-left: 4px solid #004564; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                        .protocol-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+                        .protocol-value { font-size: 20px; font-weight: 700; color: #004564; margin-top: 5px; font-family: monospace; }
+                        .info-text { font-size: 14px; color: #555; line-height: 1.8; margin: 15px 0; }
+                        .next-steps { background: #fafafa; padding: 20px; border-radius: 8px; margin: 25px 0; }
+                        .next-steps h3 { margin: 0 0 15px; color: #004564; font-size: 16px; }
+                        .next-steps ol { margin: 0; padding-left: 20px; }
+                        .next-steps li { margin: 10px 0; color: #555; font-size: 14px; }
+                        .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #e0e0e0; margin: 20px 0 0; }
+                        .footer p { margin: 5px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="email-wrapper">
+                        <div class="header">
+                            <h1>🎓 Vix Cursos</h1>
+                            <p>Sistema de Pré-inscrição</p>
+                        </div>
+                        
+                        <div class="content">
+                            <div class="success-badge">
+                                <div class="icon">✅</div>
+                                <p>Pré-inscrição Recebida!</p>
+                            </div>
+                            
+                            <p class="greeting">Olá, <strong>${nome}</strong>!</p>
+                            <p class="info-text">Sua pré-inscrição foi recebida com sucesso no curso de <strong style="color: #004564;">${cursoNome}</strong>. Estamos muito felizes em contar com você!</p>
+                            
+                            <div class="protocol-box">
+                                <div class="protocol-label">Seu Número de Protocolo</div>
+                                <div class="protocol-value">${protocolo}</div>
+                                <p style="margin: 10px 0 0; color: #666; font-size: 12px;">Guarde este número, você pode precisar dele.</p>
+                            </div>
+                            
+                            <div class="next-steps">
+                                <h3>O que acontece agora?</h3>
+                                <ol>
+                                    <li>Analisaremos seus dados de inscrito</li>
+                                    <li>Validaremos as informações fornecidas</li>
+                                    <li>Você receberá a confirmação da matrícula em breve</li>
+                                </ol>
+                            </div>
+                            
+                            <p class="info-text">Fique atento à sua caixa de e-mail (incluindo a pasta de spam) para receber a confirmação oficial. Em caso de dúvidas, nosso time estará disponível para ajudar!</p>
+                            
+                            <p style="font-size: 13px; color: #888; margin-top: 25px; padding-top: 20px; border-top: 1px solid #e0e0e0;">🚀 Estamos ansiosos para sua participação no curso!</p>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>© 2026 Vix Cursos - Todos os direitos reservados</p>
+                            <p>Este é um aviso automatizado do sistema. Por favor, não responda este e-mail.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
             `
         });
     }
@@ -725,17 +848,97 @@ async function createApp() {
         await mailer.sendMail({
             from: EMAIL_FROM,
             to: email,
-            subject: `Matrícula confirmada - ${cursoNome}`,
+            subject: `🎉 Matrícula Confirmada - ${cursoNome}`,
             html: `
-                <div style="font-family:Arial,Helvetica,sans-serif;max-width:680px;margin:0 auto;padding:24px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;line-height:1.6;color:#111827;">
-                    <p style="margin:0 0 14px;">Olá, <strong>${nome}</strong>!</p>
-                    <p style="margin:0 0 14px;">Sua matrícula no curso de <strong>${cursoNome}</strong> foi <strong>confirmada</strong>.</p>
-                    <p style="margin:0 0 14px;"><strong>Protocolo:</strong> ${protocolo}</p>
-                    <p style="margin:0 0 14px;">${dataInicio && dataTermino ? `Período: <strong>${dataInicio}</strong> a <strong>${dataTermino}</strong>.<br>` : ""}${horaInicio && horaTermino ? `Horário: <strong>${horaInicio}h às ${horaTermino}h</strong>.<br>` : ""}${local ? `Local: <strong>${local}</strong>.` : ""}</p>
-                    <p style="margin:0 0 14px;">👉 Menores de idade devem estar acompanhados do responsável legal.</p>
-                    <p style="margin:0 0 14px;">Esperamos por você! 🚀</p>
-                    <p style="margin:0;font-size:12px;color:#6b7280;">Mensagem automatica do sistema Vix Cursos.</p>
-                </div>
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+                        .email-wrapper { max-width: 600px; margin: 0 auto; background: #f5f5f5; }
+                        .header { background: linear-gradient(135deg, #004564 0%, #1a5874 100%); padding: 30px 20px; text-align: center; }
+                        .header h1 { color: #fff; margin: 0; font-size: 28px; font-weight: 700; }
+                        .header p { color: #e0f2fe; margin: 5px 0 0; font-size: 13px; letter-spacing: 1px; }
+                        .content { background: #fff; padding: 40px 30px; margin: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                        .confirmation-badge { background: linear-gradient(135deg, #FF8A5A 0%, #F36C6F 100%); color: #fff; padding: 25px; border-radius: 10px; text-align: center; margin-bottom: 30px; }
+                        .confirmation-badge .icon { font-size: 48px; margin-bottom: 15px; }
+                        .confirmation-badge p { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.4; }
+                        .greeting { font-size: 16px; color: #1e293b; margin: 0 0 20px; line-height: 1.6; }
+                        .greeting strong { color: #004564; }
+                        .course-details { background: #f0f9ff; border-left: 4px solid #FF8A5A; padding: 20px; margin: 25px 0; border-radius: 5px; }
+                        .detail-item { margin: 15px 0; }
+                        .detail-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+                        .detail-value { font-size: 16px; font-weight: 700; color: #004564; margin-top: 3px; }
+                        .protocol-box { background: #f8f4f0; border: 2px dashed #FF8A5A; padding: 15px; margin: 20px 0; border-radius: 5px; text-align: center; }
+                        .protocol-label { font-size: 11px; color: #666; text-transform: uppercase; }
+                        .protocol-value { font-size: 18px; font-weight: 700; color: #004564; margin-top: 5px; font-family: monospace; }
+                        .important-info { background: #fffbf0; border-left: 4px solid #FF8A5A; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                        .important-info p { margin: 8px 0; color: #555; font-size: 14px; line-height: 1.6; }
+                        .important-info strong { color: #d97706; }
+                        .info-text { font-size: 14px; color: #555; line-height: 1.8; margin: 15px 0; }
+                        .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #e0e0e0; margin: 20px 0 0; }
+                        .footer p { margin: 5px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="email-wrapper">
+                        <div class="header">
+                            <h1>🎓 Vix Cursos</h1>
+                            <p>Confirmação de Matrícula</p>
+                        </div>
+                        
+                        <div class="content">
+                            <div class="confirmation-badge">
+                                <div class="icon">🎉</div>
+                                <p>Matrícula Confirmada!</p>
+                            </div>
+                            
+                            <p class="greeting">Olá, <strong>${nome}</strong>!</p>
+                            <p class="info-text">Sua matrícula no curso de <strong style="color: #004564;">${cursoNome}</strong> foi <strong style="color: #004564;">oficialmente confirmada</strong>! Parabéns e bem-vindo(a)!</p>
+                            
+                            <div class="course-details">
+                                <div class="detail-item">
+                                    <div class="detail-label">📚 Curso</div>
+                                    <div class="detail-value">${cursoNome}</div>
+                                </div>
+                                ${dataInicio && dataTermino ? `<div class="detail-item">
+                                    <div class="detail-label">📅 Período</div>
+                                    <div class="detail-value">${dataInicio} a ${dataTermino}</div>
+                                </div>` : ''}
+                                ${horaInicio && horaTermino ? `<div class="detail-item">
+                                    <div class="detail-label">⏰ Horário</div>
+                                    <div class="detail-value">${horaInicio}h às ${horaTermino}h</div>
+                                </div>` : ''}
+                                ${local ? `<div class="detail-item">
+                                    <div class="detail-label">📍 Local</div>
+                                    <div class="detail-value">${local}</div>
+                                </div>` : ''}
+                            </div>
+                            
+                            <div class="protocol-box">
+                                <div class="protocol-label">Seu Número de Protocolo</div>
+                                <div class="protocol-value">${protocolo}</div>
+                            </div>
+                            
+                            <div class="important-info">
+                                <p><strong>⚠️ Importante:</strong> Menores de idade devem estar acompanhados do responsável legal em todos os dias de aula.</p>
+                                <p><strong>📌 Dica:</strong> Salve ou imprima este e-mail para apresentar no primeiro dia do curso.</p>
+                            </div>
+                            
+                            <p class="info-text" style="text-align: center; font-size: 15px; color: #004564; font-weight: 600;">🚀 Estamos muito animados para vê-lo em breve!</p>
+                            
+                            <p style="font-size: 13px; color: #888; margin-top: 25px; padding-top: 20px; border-top: 1px solid #e0e0e0;">Qualquer dúvida, entre em contato conosco através do nosso site.</p>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>© 2026 Vix Cursos - Todos os direitos reservados</p>
+                            <p>Este é um aviso automatizado do sistema. Por favor, não responda este e-mail.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
             `
         });
     }
