@@ -24,8 +24,8 @@ async function inicializarPortal() {
         const temFiltros = document.getElementById("filtro-idade");
 
         if (containerCursos) {
-            await carregarCursos(); 
-            await carregarEstatisticas(); 
+            const cursos = await carregarCursos(); 
+            await carregarEstatisticas(cursos); 
             iniciarMonitorDestaques();
         }
 
@@ -220,17 +220,39 @@ function gerenciarMensagemVazia(temCursos) {
 /* =========================================================
    2. API: ESTATÍSTICAS E CURSOS
 ========================================================= */
-async function carregarEstatisticas() {
-    try {
-        const res = await fetch('/api/estatisticas');
-        if (!res.ok) return;
-        
-        const data = await res.json();
-        const elVagasHoje = document.getElementById('vagasHoje');
-        const elVagas2026 = document.getElementById('vagas2026');
+async function obterCursosParaEstatisticas(cursosCarregados = null) {
+    if (Array.isArray(cursosCarregados)) {
+        return cursosCarregados;
+    }
 
-        if (elVagasHoje) elVagasHoje.innerText = data.vagasHoje;
-        if (elVagas2026) elVagas2026.innerText = data.vagas2026;
+    const res = await fetch('/api/cursos-public');
+    if (!res.ok) {
+        return [];
+    }
+
+    return res.json();
+}
+
+function contarCursosDisponiveis(cursos) {
+    if (!Array.isArray(cursos)) {
+        return 0;
+    }
+
+    return cursos.filter((curso) => {
+        const vagas = parseInt(curso.vagas, 10) || 0;
+        return curso.status !== 'esgotado' && vagas > 0;
+    }).length;
+}
+
+async function carregarEstatisticas(cursosCarregados = null) {
+    try {
+        const cursos = await obterCursosParaEstatisticas(cursosCarregados);
+        const totalDisponiveis = contarCursosDisponiveis(cursos);
+        const elVagasHoje = document.getElementById('vagasHoje');
+
+        if (elVagasHoje) {
+            elVagasHoje.innerText = totalDisponiveis.toLocaleString('pt-BR');
+        }
     } catch (err) {
         console.error("Erro ao puxar estatísticas.");
     }
@@ -239,13 +261,15 @@ async function carregarEstatisticas() {
 async function carregarCursos() {
     try {
         const res = await fetch('/api/cursos-public');
-        if (!res.ok) return;
+        if (!res.ok) return [];
         
         const cursos = await res.json();
         exibirCursos(cursos);
         atualizarCursosDestaque(cursos, true);
+        return cursos;
     } catch (err) {
         console.error("Erro ao carregar cursos.");
+        return [];
     }
 }
 
