@@ -201,8 +201,34 @@ async function carregarPaginaDetalhes() {
             const elLocal = document.getElementById("detalhe-local");
             if (elLocal) elLocal.innerText = local;
 
+            // ===== ATUALIZAR VAGAS COM VISUALIZAÇÃO DE STATUS =====
             const elVagas = document.getElementById("detalhe-vagas");
-            if (elVagas) elVagas.innerText = curso.vagas || "0";
+            if (elVagas) {
+                const vagasDisponiveis = curso.vagas || 0;
+                const vagasTexto = vagasDisponiveis <= 0 
+                    ? "ESGOTADO" 
+                    : vagasDisponiveis <= 3
+                    ? `${vagasDisponiveis} vaga${vagasDisponiveis === 1 ? '' : 's'} (Últimas!)`
+                    : `${vagasDisponiveis} vagas`;
+                
+                // Cores: Verde (muitas), Laranja (poucas), Vermelho (esgotado)
+                let cor = vagasDisponiveis > 5 ? '#4CAF50' : vagasDisponiveis > 0 ? '#FF8A5A' : '#F36C6F';
+                
+                elVagas.innerText = vagasTexto;
+                elVagas.style.color = cor;
+                elVagas.style.fontWeight = 'bold';
+                
+                // Se esgotado, desabilitar botão de inscrição
+                if (vagasDisponiveis <= 0) {
+                    const btnInscricao = document.querySelector('[href*="pre_inscricao.html"]');
+                    if (btnInscricao) {
+                        btnInscricao.style.opacity = '0.5';
+                        btnInscricao.style.pointerEvents = 'none';
+                        btnInscricao.style.cursor = 'not-allowed';
+                        btnInscricao.title = 'Curso esgotado - Não disponível para inscrição';
+                    }
+                }
+            }
 
             const elModalidade = document.getElementById("detalhe-modalidade");
             if (elModalidade) elModalidade.innerText = modalidade;

@@ -14,6 +14,46 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // =========================================================
+    // 1.5 VERIFICA DISPONIBILIDADE DE VAGAS
+    // =========================================================
+    async function verificarVagas() {
+        try {
+            const response = await fetch(`/api/cursos-public/${cursoId}/vagas`);
+            const dados = await response.json();
+            
+            if (!dados.disponivel) {
+                document.getElementById('chatBox').innerHTML = `
+                    <div style="padding: 20px; text-align: center; background: #ffebee; border-radius: 10px;">
+                        <h2 style="color: #c62828; margin-bottom: 10px;">❌ Curso Esgotado</h2>
+                        <p style="color: #b71c1c; font-size: 16px;">
+                            Infelizmente, as vagas para este curso já foram todas preenchidas.
+                        </p>
+                        <p style="color: #666; font-size: 14px; margin-top: 15px;">
+                            <strong>${dados.inscritos}</strong> pessoas já se inscreveram em <strong>${dados.vagas_totais}</strong> vagas disponíveis.
+                        </p>
+                        <a href="index.html" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: #004564; color: white; text-decoration: none; border-radius: 5px;">
+                            Voltar para Cursos
+                        </a>
+                    </div>
+                `;
+                
+                // Desabilitar todos os controles
+                document.getElementById('optionsWrapper').style.display = 'none';
+                document.getElementById('textInputWrapper').style.display = 'none';
+                document.getElementById('documentWrapper').style.display = 'none';
+                
+                // Parar execução
+                return false;
+            }
+            
+            return true;
+        } catch (err) {
+            console.error("Erro ao verificar vagas:", err);
+            return true; // Continuar mesmo com erro
+        }
+    }
+
+    // =========================================================
     // 2. VARIÁVEIS GERAIS DO CHATBOT
     // =========================================================
     const chatBox = document.getElementById('chatBox');
@@ -685,9 +725,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // =========================================================
     // INICIAR CONVERSA 
     // =========================================================
-    // Espera 1 segundinho pra dar um "ar de carregamento" e dispara a primeira pergunta
-    setTimeout(() => {
-        mostrarPerguntaAtual();
-    }, 500);
+    // Verifica vagas antes de iniciar o chatbot
+    verificarVagas().then(temVagas => {
+        if (temVagas) {
+            // Espera 1 segundinho pra dar um "ar de carregamento" e dispara a primeira pergunta
+            setTimeout(() => {
+                mostrarPerguntaAtual();
+            }, 500);
+        }
+    });
 
 });

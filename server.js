@@ -1011,7 +1011,9 @@ async function createApp() {
                 SELECT 
                     c.id, 
                     COALESCE(fcurso.curso, 'Curso sem nome') AS nome, 
-                    c.vagas, 
+                    c.vagas AS vagas_totais, 
+                    COALESCE(COUNT(pi.id), 0) AS inscritos,
+                    (c.vagas - COALESCE(COUNT(pi.id), 0)) AS vagas_disponiveis,
                     c.status,
                     TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio, 
                     TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino,
@@ -1030,10 +1032,20 @@ async function createApp() {
                 LEFT JOIN filtro_idade fiMax ON fiMax.id = c.idade_max
                 LEFT JOIN filtro_modalidade fm ON fm.id = c.modalidade_id
                 LEFT JOIN filtro_local fl ON fl.id = c.local_id
+                LEFT JOIN pre_inscricoes pi ON pi.curso_id = c.id
+                GROUP BY c.id
                 ORDER BY c.id DESC
             `;
             const [rows] = await db.query(querySql);
-            res.json(rows);
+            
+            // Filtrar cursos esgotados e manter compatibilidade
+            const cursosFormatados = rows.map(curso => ({
+                ...curso,
+                vagas: curso.vagas_disponiveis, // Para compatibilidade com frontend
+                disponivel: curso.vagas_disponiveis > 0
+            }));
+            
+            res.json(cursosFormatados);
         } catch (err) {
             return responderErroBanco(res, err, "Erro na rota /api/cursos-public:");
         }
@@ -1046,7 +1058,9 @@ async function createApp() {
                 SELECT 
                     c.id, 
                     COALESCE(fcurso.curso, 'Curso sem nome') AS nome, 
-                    c.vagas, 
+                    c.vagas AS vagas_totais, 
+                    COALESCE(COUNT(pi.id), 0) AS inscritos,
+                    (c.vagas - COALESCE(COUNT(pi.id), 0)) AS vagas_disponiveis,
                     c.status,
                     TIME_FORMAT(c.horario_inicio, '%H:%i') AS horario_inicio, 
                     TIME_FORMAT(c.horario_termino, '%H:%i') AS horario_termino,
@@ -1065,7 +1079,9 @@ async function createApp() {
                 LEFT JOIN filtro_idade fiMax ON fiMax.id = c.idade_max
                 LEFT JOIN filtro_modalidade fm ON fm.id = c.modalidade_id
                 LEFT JOIN filtro_local fl ON fl.id = c.local_id
+                LEFT JOIN pre_inscricoes pi ON pi.curso_id = c.id
                 WHERE c.id = ?
+                GROUP BY c.id
             `;
             const [rows] = await db.query(querySql, [id]);
             
@@ -1073,9 +1089,56 @@ async function createApp() {
                 return res.status(404).json({ error: "Curso não encontrado" });
             }
             
-            res.json(rows[0]);
+            // Adicionar campo para indicar se ainda tem vagas
+            const curso = {
+                ...rows[0],
+                vagas: rows[0].vagas_disponiveis, // Para compatibilidade com frontend
+                disponivel: rows[0].vagas_disponiveis > 0
+            };
+            
+            res.json(curso);
         } catch (err) {
             return responderErroBanco(res, err, "Erro na rota /api/cursos-public/:id:");
+        }
+    });
+
+    /**
+     * Endpoint para verificar disponibilidade de vagas de um curso
+     * GET /api/cursos-public/:id/vagas
+     * Retorna: { disponivel: boolean, vagas_disponiveis: number, vagas_totais: number, inscritos: number }
+     */
+    app.get("/api/cursos-public/:id/vagas", async (req, res) => {
+        try {
+            const { id } = req.params;
+            
+            const [rows] = await db.query(`
+                SELECT 
+                    c.vagas AS vagas_totais,
+                    COALESCE(COUNT(pi.id), 0) AS inscritos,
+                    (c.vagas - COALESCE(COUNT(pi.id), 0)) AS vagas_disponiveis,
+                    c.status
+                FROM cursos c
+                LEFT JOIN pre_inscricoes pi ON pi.curso_id = c.id
+                WHERE c.id = ?
+                GROUP BY c.id
+            `, [id]);
+            
+            if (rows.length === 0) {
+                return res.status(404).json({ error: "Curso não encontrado" });
+            }
+            
+            const resultado = rows[0];
+            const disponivel = resultado.vagas_disponiveis > 0 && resultado.status !== 'esgotado';
+            
+            res.json({
+                disponivel,
+                vagas_disponiveis: resultado.vagas_disponiveis,
+                vagas_totais: resultado.vagas_totais,
+                inscritos: resultado.inscritos,
+                status: resultado.status
+            });
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro ao verificar vagas do curso:");
         }
     });
 
@@ -1263,8 +1326,27 @@ async function createApp() {
 
             if (!curso.length) return res.status(404).json({ error: "Curso não encontrado" });
 
-            const vagas = curso[0].vagas;
-            if (vagas <= 0) return res.json({ error: "Vagas esgotadas" });
+            // ======== VALIDAÇÃO DE VAGAS ========
+            const vagasDefinidas = curso[0].vagas;
+            
+            // Contar quantas inscrições já foram feitas neste curso
+            const [contagem] = await db.query(
+                `SELECT COUNT(*) as total FROM pre_inscricoes WHERE curso_id = ?`,
+                [curso_id]
+            );
+            
+            const inscritosAtuais = contagem[0].total;
+            const vagasDisponiveis = vagasDefinidas - inscritosAtuais;
+            
+            // Se não há vagas ou o status está marcado como esgotado
+            if (vagasDisponiveis <= 0 || curso[0].status === 'esgotado') {
+                return res.status(400).json({ 
+                    error: "Este curso atingiu o número máximo de inscrições. Infelizmente, as vagas estão esgotadas.",
+                    vagas_disponiveis: 0,
+                    inscritos: inscritosAtuais,
+                    vagas_totais: vagasDefinidas
+                });
+            }
 
             const nomeCurso = curso[0].nome_curso || "Curso";
             const dadosConfirmacao = {
@@ -1319,10 +1401,13 @@ async function createApp() {
 
             const protocolo = gerarProtocoloInscricao(insertResult.insertId);
 
-            const novasVagas = vagas - 1;
+            // Atualizar vagas e status: quando as vagas chegam a 0, marca como esgotado
+            const novasVagas = vagasDisponiveis - 1;
+            const novoStatus = novasVagas === 0 ? "esgotado" : "ativo";
+            
             await db.query(
                 `UPDATE cursos SET vagas = ?, status = ? WHERE id = ?`,
-                [novasVagas, novasVagas === 0 ? "esgotado" : "ativo", curso_id]
+                [novasVagas, novoStatus, curso_id]
             );
 
             const smsMensagem = montarSmsConfirmacao(dadosConfirmacao);
