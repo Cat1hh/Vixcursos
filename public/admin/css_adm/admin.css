@@ -95,19 +95,23 @@ body::after {
     text-decoration: none;
 }
 
-.brand-icon {
-    font-size: 1.35rem;
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
+.brand-logo-wrap {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
     display: grid;
     place-items: center;
-    background: linear-gradient(145deg, rgba(124, 58, 237, 0.9), rgba(79, 70, 229, 0.9));
-    box-shadow: 0 12px 24px rgba(79, 70, 229, 0.35);
+    background: linear-gradient(145deg, rgba(124, 58, 237, 0.24), rgba(79, 70, 229, 0.24));
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+    flex-shrink: 0;
 }
 
-.brand-icon i {
-    font-size: 1.2rem;
+.brand-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(79, 70, 229, 0.34));
 }
 
 .brand-name {
