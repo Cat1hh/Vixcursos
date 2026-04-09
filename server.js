@@ -1489,34 +1489,71 @@ async function createApp() {
     app.get("/inscritos/:idCurso", exigirAuthAdmin, async (req, res) => {
         try {
             const { idCurso } = req.params;
-            const [rows] = await db.query(`
-                SELECT
-                    id,
-                    nome,
-                    email,
-                    telefone,
-                    cpf,
-                    rg,
-                    mora_vitoria,
-                    escolaridade,
-                    cep,
-                    numero,
-                    rua,
-                    bairro,
-                    municipio,
-                    possui_necessidade_especial,
-                    tipo_necessidade_especial,
-                    cpf_documento,
-                    rg_documento,
-                    matricula_confirmada,
-                    matricula_confirmada_em,
-                    criado_em AS data
-                FROM pre_inscricoes
-                WHERE curso_id = ?
-                ORDER BY criado_em DESC
-            `, [idCurso]);
+            try {
+                const [rows] = await db.query(`
+                    SELECT
+                        id,
+                        nome,
+                        email,
+                        telefone,
+                        cpf,
+                        rg,
+                        mora_vitoria,
+                        escolaridade,
+                        cep,
+                        numero,
+                        rua,
+                        bairro,
+                        municipio,
+                        possui_necessidade_especial,
+                        tipo_necessidade_especial,
+                        cpf_documento,
+                        rg_documento,
+                        matricula_confirmada,
+                        matricula_confirmada_em,
+                        criado_em AS data
+                    FROM pre_inscricoes
+                    WHERE curso_id = ?
+                    ORDER BY criado_em DESC
+                `, [idCurso]);
 
-            res.json(rows);
+                return res.json(rows);
+            } catch (erroColuna) {
+                if (erroColuna && erroColuna.code === "42703") {
+                    console.warn("[inscritos] Colunas de matricula ainda nao existem. Aplicando fallback.");
+
+                    const [rowsFallback] = await db.query(`
+                        SELECT
+                            id,
+                            nome,
+                            email,
+                            telefone,
+                            cpf,
+                            rg,
+                            mora_vitoria,
+                            escolaridade,
+                            cep,
+                            numero,
+                            rua,
+                            bairro,
+                            municipio,
+                            possui_necessidade_especial,
+                            tipo_necessidade_especial,
+                            cpf_documento,
+                            rg_documento,
+                            0 AS matricula_confirmada,
+                            NULL::timestamp AS matricula_confirmada_em,
+                            criado_em AS data
+                        FROM pre_inscricoes
+                        WHERE curso_id = ?
+                        ORDER BY criado_em DESC
+                    `, [idCurso]);
+
+                    return res.json(rowsFallback);
+                }
+
+                throw erroColuna;
+            }
         } catch (err) {
             return responderErroBanco(res, err, "Erro ao buscar inscritos");
         }
