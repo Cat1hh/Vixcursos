@@ -497,12 +497,17 @@ async function createApp() {
     }
 
     function montarLayoutEmailBase({ tituloSecao, subtituloSecao, conteudoHtml, exibirPonte = false, modoPonte = "padrao" }) {
-        const estiloPonte = modoPonte === "cobertura"
-            ? "position:absolute;right:-30px;bottom:-110px;width:760px;max-width:none;opacity:0.38;"
-            : "position:absolute;right:-20px;bottom:-30px;width:360px;max-width:60%;opacity:0.2;";
+        const classePonte = modoPonte === "cobertura"
+            ? "bridge-wrap bridge-cover"
+            : "bridge-wrap bridge-soft";
 
         const camadaPonte = exibirPonte
-            ? `<img src="cid:${EMAIL_BRIDGE_CID}" alt="Terceira Ponte" style="${estiloPonte}">`
+            ? `
+                <div class="${classePonte}">
+                    <img src="cid:${EMAIL_BRIDGE_CID}" alt="Terceira Ponte" class="bridge-img">
+                    <div class="bridge-fade"></div>
+                </div>
+            `
             : "";
 
         return `
@@ -514,9 +519,16 @@ async function createApp() {
                 <style>
                     body { margin: 0; padding: 0; background: #fdfbf9; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b; }
                     .wrapper { max-width: 640px; margin: 0 auto; background: #fdfbf9; }
-                    .hero { position: relative; overflow: hidden; background: linear-gradient(135deg, #004564 0%, #1a5874 100%); padding: 34px 28px 88px; }
+                    .hero { position: relative; overflow: hidden; background: linear-gradient(135deg, #004564 0%, #1a5874 100%); padding: 34px 28px 86px; }
                     .hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px); background-size: 28px 28px; }
-                    .hero-content { position: relative; z-index: 1; }
+                    .bridge-wrap { position: absolute; left: 0; right: 0; bottom: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+                    .bridge-soft { height: 46%; opacity: 0.22; }
+                    .bridge-cover { height: 68%; opacity: 0.3; }
+                    .bridge-img { position: absolute; left: 50%; transform: translateX(-50%); max-width: none; }
+                    .bridge-soft .bridge-img { width: 108%; bottom: -10px; }
+                    .bridge-cover .bridge-img { width: 132%; bottom: -32px; }
+                    .bridge-fade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,69,100,0.76) 8%, rgba(0,69,100,0.42) 45%, rgba(0,69,100,0) 100%); }
+                    .hero-content { position: relative; z-index: 2; }
                     .brand { color: #f8fafc; font-weight: 800; font-size: 23px; letter-spacing: -0.02em; margin: 0; }
                     .subtitle { color: #d7eaf3; margin: 6px 0 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
                     .card { background: #ffffff; margin: -56px 18px 0; border: 1px solid #e2e8f0; border-radius: 14px; padding: 28px 24px; box-shadow: 0 14px 36px rgba(2, 26, 43, 0.14); position: relative; z-index: 2; }
@@ -537,11 +549,11 @@ async function createApp() {
                 <div class="wrapper">
                     <div class="hero">
                         <div class="hero-grid"></div>
+                        ${camadaPonte}
                         <div class="hero-content">
                             <p class="brand">Vix Cursos</p>
                             <p class="subtitle">Prefeitura de Vitoria</p>
                         </div>
-                        ${camadaPonte}
                     </div>
 
                     <div class="card">
@@ -1506,6 +1518,7 @@ async function createApp() {
             );
 
             let emailStatus = "enviado";
+            let emailErro = null;
             try {
                 const protocolo = gerarProtocoloInscricao(inscricao.id);
                 await enviarEmailMatriculaConfirmada({
@@ -1521,10 +1534,11 @@ async function createApp() {
                 });
             } catch (err) {
                 emailStatus = "falhou";
+                emailErro = err?.code || err?.responseCode || err?.message || "erro-desconhecido";
                 console.error("Falha ao enviar email de matrícula confirmada:", err);
             }
 
-            return res.json({ status: "ok", email: emailStatus });
+            return res.json({ status: "ok", email: emailStatus, email_erro: emailErro });
         } catch (err) {
             console.error("Erro ao confirmar matrícula:", err);
             return res.status(500).json({ error: "Erro ao confirmar matrícula." });
