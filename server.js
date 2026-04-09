@@ -1038,9 +1038,9 @@ async function createApp() {
                 SELECT 
                     c.id, 
                     COALESCE(fcurso.curso, 'Curso sem nome') AS nome, 
-                    c.vagas AS vagas_totais, 
+                    (c.vagas + COALESCE(COUNT(pi.id), 0)) AS vagas_totais, 
                     COALESCE(COUNT(pi.id), 0) AS inscritos,
-                    (c.vagas - COALESCE(COUNT(pi.id), 0)) AS vagas_disponiveis,
+                    c.vagas AS vagas_disponiveis,
                     c.status,
                     TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio, 
                     TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino,
@@ -1099,9 +1099,9 @@ async function createApp() {
                 SELECT 
                     c.id, 
                     COALESCE(fcurso.curso, 'Curso sem nome') AS nome, 
-                    c.vagas AS vagas_totais, 
+                    (c.vagas + COALESCE(COUNT(pi.id), 0)) AS vagas_totais, 
                     COALESCE(COUNT(pi.id), 0) AS inscritos,
-                    (c.vagas - COALESCE(COUNT(pi.id), 0)) AS vagas_disponiveis,
+                    c.vagas AS vagas_disponiveis,
                     c.status,
                     TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio, 
                     TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino,
@@ -1168,9 +1168,9 @@ async function createApp() {
             
             const [rows] = await db.query(`
                 SELECT 
-                    c.vagas AS vagas_totais,
+                    (c.vagas + COALESCE(COUNT(pi.id), 0)) AS vagas_totais,
                     COALESCE(COUNT(pi.id), 0) AS inscritos,
-                    (c.vagas - COALESCE(COUNT(pi.id), 0)) AS vagas_disponiveis,
+                    c.vagas AS vagas_disponiveis,
                     c.status
                 FROM cursos c
                 LEFT JOIN pre_inscricoes pi ON pi.curso_id = c.id
@@ -1383,16 +1383,15 @@ async function createApp() {
             if (!curso.length) return res.status(404).json({ error: "Curso não encontrado" });
 
             // ======== VALIDAÇÃO DE VAGAS ========
-            const vagasDefinidas = curso[0].vagas;
-            
-            // Contar quantas inscrições já foram feitas neste curso
+            const vagasDisponiveis = Number(curso[0].vagas) || 0;
+
+            // Contagem usada apenas para telemetria/retorno ao frontend
             const [contagem] = await db.query(
                 `SELECT COUNT(*) as total FROM pre_inscricoes WHERE curso_id = ?`,
                 [curso_id]
             );
-            
-            const inscritosAtuais = contagem[0].total;
-            const vagasDisponiveis = vagasDefinidas - inscritosAtuais;
+            const inscritosAtuais = Number(contagem[0].total) || 0;
+            const vagasTotais = vagasDisponiveis + inscritosAtuais;
             
             // Se não há vagas ou o status está marcado como esgotado
             if (vagasDisponiveis <= 0 || curso[0].status === 'esgotado') {
@@ -1400,7 +1399,7 @@ async function createApp() {
                     error: "Este curso atingiu o número máximo de inscrições. Infelizmente, as vagas estão esgotadas.",
                     vagas_disponiveis: 0,
                     inscritos: inscritosAtuais,
-                    vagas_totais: vagasDefinidas
+                    vagas_totais: vagasTotais
                 });
             }
 
