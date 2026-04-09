@@ -5,12 +5,27 @@
 
 async function carregarMonitoramento() {
     try {
+        const lerJsonOuLancar = async (res) => {
+            if (res.status === 401 || (res.redirected && String(res.url || '').includes('/admin/login.html'))) {
+                window.location.href = '/admin/login.html';
+                throw new Error('sessao-expirada');
+            }
+            if (!res.ok) {
+                throw new Error(`http-${res.status}`);
+            }
+            const tipo = String(res.headers.get('content-type') || '').toLowerCase();
+            if (!tipo.includes('application/json')) {
+                throw new Error('resposta-nao-json');
+            }
+            return res.json();
+        };
+
         const [resStats, resCursos] = await Promise.all([
             fetch('/api/admin/stats'),
             fetch('/api/admin/cursos-stats')
         ]);
-        const stats = await resStats.json();
-        const cursos = await resCursos.json();
+        const stats = await lerJsonOuLancar(resStats);
+        const cursos = await lerJsonOuLancar(resCursos);
 
         // ── KPIs ──────────────────────────────────────────
         const totalInscritos = cursos.reduce((acc, c) => acc + (c.inscritos || 0), 0);
@@ -71,7 +86,7 @@ async function carregarMonitoramento() {
     } catch (err) {
         console.error('Erro ao carregar monitoramento:', err);
         document.getElementById('tabelaCursos').innerHTML =
-            '<tr><td colspan="5" style="color:var(--danger);text-align:center;padding:1.5rem;">Erro ao conectar com o banco.</td></tr>';
+            '<tr><td colspan="5" style="color:var(--danger);text-align:center;padding:1.5rem;">Sessão expirada ou erro ao carregar dados do servidor.</td></tr>';
     }
 }
 

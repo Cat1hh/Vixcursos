@@ -6,6 +6,24 @@ let cursosGlobais = [];
 let cursoAbertoAtual = null; 
 let alunosGlobais = []; // NOVO: Guarda a lista de alunos daquele curso
 
+async function lerJsonOuLancar(res) {
+    if (res.status === 401 || (res.redirected && String(res.url || '').includes('/admin/login.html'))) {
+        window.location.href = '/admin/login.html';
+        throw new Error('sessao-expirada');
+    }
+
+    if (!res.ok) {
+        throw new Error(`http-${res.status}`);
+    }
+
+    const tipo = String(res.headers.get('content-type') || '').toLowerCase();
+    if (!tipo.includes('application/json')) {
+        throw new Error('resposta-nao-json');
+    }
+
+    return res.json();
+}
+
 function escapeHtml(valor) {
     return String(valor || '')
         .replace(/&/g, '&amp;')
@@ -56,7 +74,7 @@ function formatarDataBr(dataIso) {
 async function carregarCursos() {
     try {
         const res = await fetch('/cursos'); 
-        cursosGlobais = await res.json();
+        cursosGlobais = await lerJsonOuLancar(res);
 
         const tbody = document.getElementById('tabelaCursosBody');
         tbody.innerHTML = '';
@@ -86,7 +104,7 @@ async function carregarCursos() {
         });
     } catch (err) {
         console.error("Erro ao carregar cursos:", err);
-        document.getElementById('tabelaCursosBody').innerHTML = `<tr><td colspan="5" style="color: red; text-align: center;">Erro ao conectar com o banco.</td></tr>`;
+        document.getElementById('tabelaCursosBody').innerHTML = `<tr><td colspan="5" style="color: red; text-align: center;">Sessão expirada ou erro ao carregar dados do servidor.</td></tr>`;
     }
 }
 
@@ -109,7 +127,7 @@ async function abrirListaAlunos(idCurso) {
 
     try {
         const res = await fetch(`/inscritos/${idCurso}`);
-        alunosGlobais = await res.json(); // Salva os alunos na memória para a ficha
+        alunosGlobais = await lerJsonOuLancar(res); // Salva os alunos na memória para a ficha
         if (btnPdf) btnPdf.style.display = 'inline-flex';
 
         tbody.innerHTML = ''; 

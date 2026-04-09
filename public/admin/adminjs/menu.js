@@ -5,10 +5,32 @@
         document.getElementById('formCriarCurso').reset();
     }
 
+    function deveRedirecionarLogin(res) {
+        return res.status === 401 || (res.redirected && String(res.url || '').includes('/admin/login.html'));
+    }
+
+    async function lerJsonOuLancar(res) {
+        if (deveRedirecionarLogin(res)) {
+            window.location.href = '/admin/login.html';
+            throw new Error('sessao-expirada');
+        }
+
+        if (!res.ok) {
+            throw new Error(`http-${res.status}`);
+        }
+
+        const tipo = String(res.headers.get('content-type') || '').toLowerCase();
+        if (!tipo.includes('application/json')) {
+            throw new Error('resposta-nao-json');
+        }
+
+        return res.json();
+    }
+
     async function carregarStats() {
         try {
             const res = await fetch('/api/admin/stats');
-            const s = await res.json();
+            const s = await lerJsonOuLancar(res);
             const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? '--'; };
             set('kpiTotal', s.total);
             set('kpiAtivos', s.ativos);
@@ -51,7 +73,7 @@
     async function carregarCursosAdmin() {
         try {
             const res = await fetch("/cursos");
-            const cursos = await res.json();
+            const cursos = await lerJsonOuLancar(res);
             const tbody = document.getElementById("listaCursos");
             
             if (cursos.length === 0) {
@@ -93,7 +115,7 @@
             tbody.innerHTML = html;
         } catch (err) {
             console.error(err);
-            document.getElementById("listaCursos").innerHTML = `<tr><td colspan="6" style="color: red; text-align: center;">Erro ao conectar com o banco de dados.</td></tr>`;
+            document.getElementById("listaCursos").innerHTML = `<tr><td colspan="6" style="color: red; text-align: center;">Sessão expirada ou erro ao carregar dados do servidor.</td></tr>`;
         }
     }
 
@@ -118,7 +140,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(dados)
         })
-        .then(r => r.json())
+        .then(r => lerJsonOuLancar(r))
         .then(res => {
             if (res.error) {
                 alert("Erro ao cadastrar: " + res.error);
@@ -139,11 +161,8 @@
 
         try {
             const res = await fetch(`/cursos/esgotar/${id}`, { method: 'PUT' });
-            if (res.ok) {
-                carregarCursosAdmin(); 
-            } else {
-                alert("Erro ao tentar esgotar o curso.");
-            }
+            await lerJsonOuLancar(res);
+            carregarCursosAdmin();
         } catch (err) {
             console.error(err);
             alert("Erro de conexão.");
