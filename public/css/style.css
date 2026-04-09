@@ -522,6 +522,17 @@ body.dark-theme .footer-col h4 {
     background: #ffffff;
 }
 
+#filtro-idade,
+#filtro-local {
+    color: #111827;
+}
+
+#filtro-idade option,
+#filtro-local option {
+    color: #111827;
+    background: #ffffff;
+}
+
 .btn {
     display: inline-flex; align-items: center; justify-content: center;
     border-radius: var(--radius); font-weight: 500; font-size: 0.875rem;
