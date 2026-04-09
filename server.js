@@ -1566,37 +1566,83 @@ async function createApp() {
         try {
             const idInscricao = req.params.id;
 
-            const [rows] = await db.query(
-                `SELECT
-                    pi.id,
-                    pi.nome,
-                    pi.email,
-                    pi.matricula_confirmada,
-                    COALESCE(fc.curso, 'Curso') AS curso_nome,
-                    COALESCE(fl.local, 'A definir') AS local_nome,
-                    TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
-                    TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
-                    TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio,
-                    TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino
+            // Primeiro: buscar dados básicos da pré-inscrição
+            const [inscricaoRows] = await db.query(
+                `SELECT pi.id, pi.nome, pi.email, pi.curso_id, COALESCE(pi.matricula_confirmada, 0) as matricula_confirmada
                  FROM pre_inscricoes pi
-                 LEFT JOIN cursos c ON c.id = pi.curso_id
-                 LEFT JOIN filtro_curso fc ON fc.id = c.curso_id
-                 LEFT JOIN filtro_local fl ON fl.id = c.local_id
-                 WHERE pi.id = ?
-                 LIMIT 1`,
+                 WHERE pi.id = ?`,
                 [idInscricao]
             );
 
-            if (!rows.length) {
+            if (!inscricaoRows.length) {
                 return res.status(404).json({ error: "Inscrição não encontrada." });
             }
 
-            const inscricao = rows[0];
+            const inscricao = inscricaoRows[0];
 
             if (Number(inscricao.matricula_confirmada) === 1) {
                 return res.json({ status: "ja-confirmada", msg: "Matrícula já estava confirmada." });
             }
 
+            // Segundo: buscar dados do curso
+            const [cursoRows] = await db.query(
+                `SELECT c.id, c.curso_id, c.local_id,
+                        c.data_inicio, c.data_termino, c.horario_inicio, c.horario_termino
+                 FROM cursos c
+                 WHERE c.id = ?`,
+                [inscricao.curso_id]
+            );
+
+            let cursoNome = 'Curso';
+            let localNome = 'A definir';
+            let dataInicio = null;
+            let dataTermino = null;
+            let horaInicio = null;
+            let horaTermino = null;
+
+            if (cursoRows.length) {
+                const curso = cursoRows[0];
+                
+                // Buscar nome do curso
+                if (curso.curso_id) {
+                    const [cursoFiltroRows] = await db.query(
+                        `SELECT curso FROM filtro_curso WHERE id = ?`,
+                        [curso.curso_id]
+                    );
+                    if (cursoFiltroRows.length) {
+                        cursoNome = cursoFiltroRows[0].curso;
+                    }
+                }
+
+                // Buscar nome do local
+                if (curso.local_id) {
+                    const [localRows] = await db.query(
+                        `SELECT local FROM filtro_local WHERE id = ?`,
+                        [curso.local_id]
+                    );
+                    if (localRows.length) {
+                        localNome = localRows[0].local;
+                    }
+                }
+
+                // Formatar datas e horas EM JAVASCRIPT
+                if (curso.data_inicio) {
+                    const data = new Date(curso.data_inicio);
+                    dataInicio = data.toLocaleDateString('pt-BR');
+                }
+                if (curso.data_termino) {
+                    const data = new Date(curso.data_termino);
+                    dataTermino = data.toLocaleDateString('pt-BR');
+                }
+                if (curso.horario_inicio) {
+                    horaInicio = String(curso.horario_inicio).substring(0, 5);
+                }
+                if (curso.horario_termino) {
+                    horaTermino = String(curso.horario_termino).substring(0, 5);
+                }
+            }
+
+            // Terceiro: atualizar matrícula
             await db.query(
                 `UPDATE pre_inscricoes
                  SET matricula_confirmada = 1,
@@ -1612,12 +1658,12 @@ async function createApp() {
                 await enviarEmailMatriculaConfirmada({
                     nome: inscricao.nome,
                     email: inscricao.email,
-                    cursoNome: inscricao.curso_nome,
-                    dataInicio: inscricao.data_inicio,
-                    dataTermino: inscricao.data_termino,
-                    horaInicio: inscricao.horario_inicio,
-                    horaTermino: inscricao.horario_termino,
-                    local: inscricao.local_nome,
+                    cursoNome: cursoNome,
+                    dataInicio: dataInicio,
+                    dataTermino: dataTermino,
+                    horaInicio: horaInicio,
+                    horaTermino: horaTermino,
+                    local: localNome,
                     protocolo
                 });
             } catch (err) {
@@ -1629,7 +1675,7 @@ async function createApp() {
             return res.json({ status: "ok", email: emailStatus, email_erro: emailErro });
         } catch (err) {
             console.error("Erro ao confirmar matrícula:", err);
-            return res.status(500).json({ error: "Erro ao confirmar matrícula." });
+            return res.status(500).json({ error: "Erro ao confirmar matrícula: " + (err?.message || "erro desconhecido") });
         }
     });
 
