@@ -38,6 +38,54 @@
         setTimeout(removerToast, 4200);
     }
 
+    function confirmarPopup({ titulo = 'Confirmar ação', mensagem = 'Deseja continuar?', textoConfirmar = 'Confirmar', textoCancelar = 'Cancelar', tipo = 'warning' } = {}) {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'admin-confirm-overlay';
+
+            const modal = document.createElement('div');
+            modal.className = 'admin-confirm-modal';
+
+            const titleEl = document.createElement('div');
+            titleEl.className = 'admin-confirm-title';
+            titleEl.textContent = titulo;
+
+            const textEl = document.createElement('div');
+            textEl.className = 'admin-confirm-text';
+            textEl.textContent = mensagem;
+
+            const actions = document.createElement('div');
+            actions.className = 'admin-confirm-actions';
+
+            const btnCancelar = document.createElement('button');
+            btnCancelar.type = 'button';
+            btnCancelar.className = 'btn btn-outline';
+            btnCancelar.textContent = textoCancelar;
+
+            const btnConfirmar = document.createElement('button');
+            btnConfirmar.type = 'button';
+            btnConfirmar.className = tipo === 'danger' ? 'btn btn-danger' : 'btn btn-primary';
+            btnConfirmar.textContent = textoConfirmar;
+
+            const fechar = (resultado) => {
+                overlay.remove();
+                resolve(resultado);
+            };
+
+            btnCancelar.addEventListener('click', () => fechar(false));
+            btnConfirmar.addEventListener('click', () => fechar(true));
+            overlay.addEventListener('click', (event) => {
+                if (event.target === overlay) fechar(false);
+            });
+
+            actions.append(btnCancelar, btnConfirmar);
+            modal.append(titleEl, textEl, actions);
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            btnConfirmar.focus();
+        });
+    }
+
     function deveRedirecionarLogin(res) {
         return res.status === 401 || (res.redirected && String(res.url || '').includes('/admin/login.html'));
     }
@@ -190,12 +238,20 @@
     }
 
     async function esgotarCurso(id, nome) {
-        if (!confirm(`Tem certeza que deseja esgotar as vagas do curso de ${nome}?`)) return;
+        const confirmou = await confirmarPopup({
+            titulo: 'Esgotar vagas',
+            mensagem: `Tem certeza que deseja esgotar as vagas do curso ${nome}?`,
+            textoConfirmar: 'Sim, esgotar',
+            textoCancelar: 'Cancelar',
+            tipo: 'danger'
+        });
+        if (!confirmou) return;
 
         try {
             const res = await fetch(`/cursos/esgotar/${id}`, { method: 'PUT' });
             await lerJsonOuLancar(res);
             carregarCursosAdmin();
+            mostrarPopup('Curso atualizado para esgotado.', 'success');
         } catch (err) {
             console.error(err);
             mostrarPopup("Erro de conexão.", 'error');

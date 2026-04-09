@@ -39,6 +39,54 @@ function mostrarPopup(mensagem, tipo = 'info') {
     setTimeout(removerToast, 4200);
 }
 
+function confirmarPopup({ titulo = 'Confirmar ação', mensagem = 'Deseja continuar?', textoConfirmar = 'Confirmar', textoCancelar = 'Cancelar', tipo = 'warning' } = {}) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'admin-confirm-overlay';
+
+        const modal = document.createElement('div');
+        modal.className = 'admin-confirm-modal';
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'admin-confirm-title';
+        titleEl.textContent = titulo;
+
+        const textEl = document.createElement('div');
+        textEl.className = 'admin-confirm-text';
+        textEl.textContent = mensagem;
+
+        const actions = document.createElement('div');
+        actions.className = 'admin-confirm-actions';
+
+        const btnCancelar = document.createElement('button');
+        btnCancelar.type = 'button';
+        btnCancelar.className = 'btn btn-outline';
+        btnCancelar.textContent = textoCancelar;
+
+        const btnConfirmar = document.createElement('button');
+        btnConfirmar.type = 'button';
+        btnConfirmar.className = tipo === 'danger' ? 'btn btn-danger' : 'btn btn-primary';
+        btnConfirmar.textContent = textoConfirmar;
+
+        const fechar = (resultado) => {
+            overlay.remove();
+            resolve(resultado);
+        };
+
+        btnCancelar.addEventListener('click', () => fechar(false));
+        btnConfirmar.addEventListener('click', () => fechar(true));
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) fechar(false);
+        });
+
+        actions.append(btnCancelar, btnConfirmar);
+        modal.append(titleEl, textEl, actions);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        btnConfirmar.focus();
+    });
+}
+
 async function lerJsonOuLancar(res) {
     if (res.status === 401 || (res.redirected && String(res.url || '').includes('/admin/login.html'))) {
         window.location.href = '/admin/login.html';
@@ -341,25 +389,37 @@ function gerarPdfInscritos() {
 }
 
 async function excluirAluno(idAluno, nomeAluno) {
-    const confirmacao2 = confirm(`⚠️ Tem certeza? Isso vai excluir ${nomeAluno} e LIBERAR UMA VAGA automaticamente.`);
-    
-    if (confirmacao2) {
-        try {
-            const res = await fetch(`/api/inscricoes/${idAluno}`, { method: 'DELETE' });
-            if (res.ok) {
-                mostrarPopup('Inscrição removida. Vaga devolvida.', 'success');
-                abrirListaAlunos(cursoAbertoAtual.id);
-            } else {
-                mostrarPopup('Erro ao tentar excluir no banco de dados.', 'error');
-            }
-        } catch (err) {
-            mostrarPopup('Falha na comunicação com o servidor.', 'error');
+    const confirmacao2 = await confirmarPopup({
+        titulo: 'Excluir inscrição',
+        mensagem: `Isso vai excluir ${nomeAluno} e liberar 1 vaga automaticamente. Deseja continuar?`,
+        textoConfirmar: 'Sim, excluir',
+        textoCancelar: 'Cancelar',
+        tipo: 'danger'
+    });
+
+    if (!confirmacao2) return;
+
+    try {
+        const res = await fetch(`/api/inscricoes/${idAluno}`, { method: 'DELETE' });
+        if (res.ok) {
+            mostrarPopup('Inscrição removida. Vaga devolvida.', 'success');
+            abrirListaAlunos(cursoAbertoAtual.id);
+        } else {
+            mostrarPopup('Erro ao tentar excluir no banco de dados.', 'error');
         }
+    } catch (err) {
+        mostrarPopup('Falha na comunicação com o servidor.', 'error');
     }
 }
 
 async function confirmarMatricula(idAluno, nomeAluno) {
-    const ok = confirm(`Confirmar matrícula de ${nomeAluno}?`);
+    const ok = await confirmarPopup({
+        titulo: 'Confirmar matrícula',
+        mensagem: `Deseja confirmar a matrícula de ${nomeAluno}?`,
+        textoConfirmar: 'Sim, confirmar',
+        textoCancelar: 'Cancelar',
+        tipo: 'info'
+    });
     if (!ok) return;
 
     try {
