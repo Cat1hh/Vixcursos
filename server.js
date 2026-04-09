@@ -34,10 +34,11 @@ const EMAIL_SOCKET_TIMEOUT = Number(process.env.EMAIL_SOCKET_TIMEOUT || 15000);
 const EMAIL_USER = process.env.EMAIL_USER || "d3bruyn@gmail.com";
 const EMAIL_PASS = process.env.EMAIL_PASS || "uwxghfrgzqdftqzf";
 const EMAIL_FROM = process.env.EMAIL_FROM || `\"Vix Cursos\" <${EMAIL_USER}>`;
-const POSTGRES_HOST = process.env.POSTGRES_HOST || "";
-const POSTGRES_USER = process.env.POSTGRES_USER || "";
-const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || "";
-const POSTGRES_DATABASE = process.env.POSTGRES_DATABASE || "postgres";
+const limparEnv = (valor) => String(valor || "").trim().replace(/^['\"]|['\"]$/g, "");
+const POSTGRES_HOST = limparEnv(process.env.POSTGRES_HOST);
+const POSTGRES_USER = limparEnv(process.env.POSTGRES_USER);
+const POSTGRES_PASSWORD = limparEnv(process.env.POSTGRES_PASSWORD);
+const POSTGRES_DATABASE = limparEnv(process.env.POSTGRES_DATABASE) || "postgres";
 const POSTGRES_PORT = Number(process.env.POSTGRES_PORT || 5432);
 const DATABASE_URL_RAW =
     process.env.DATABASE_URL ||
@@ -129,6 +130,7 @@ function converterPlaceholdersSql(sql) {
 
 function responderErroBanco(res, erro, mensagem) {
     if (eErroTimeoutBanco(erro)) {
+        console.error("[db] erro de conexao/timeout:", erro?.code || "sem_code", erro?.message || erro);
         return res.status(503).json({ error: "Banco de dados indisponivel" });
     }
 
