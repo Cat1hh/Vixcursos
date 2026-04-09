@@ -34,13 +34,23 @@ const EMAIL_SOCKET_TIMEOUT = Number(process.env.EMAIL_SOCKET_TIMEOUT || 15000);
 const EMAIL_USER = process.env.EMAIL_USER || "d3bruyn@gmail.com";
 const EMAIL_PASS = process.env.EMAIL_PASS || "uwxghfrgzqdftqzf";
 const EMAIL_FROM = process.env.EMAIL_FROM || `\"Vix Cursos\" <${EMAIL_USER}>`;
-const DATABASE_URL =
+const POSTGRES_HOST = process.env.POSTGRES_HOST || "";
+const POSTGRES_USER = process.env.POSTGRES_USER || "";
+const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || "";
+const POSTGRES_DATABASE = process.env.POSTGRES_DATABASE || "postgres";
+const POSTGRES_PORT = Number(process.env.POSTGRES_PORT || 5432);
+const DATABASE_URL_RAW =
     process.env.DATABASE_URL ||
     process.env.SUPABASE_DATABASE_URL ||
     process.env.POSTGRES_URL_NON_POOLING ||
     process.env.POSTGRES_PRISMA_URL ||
     process.env.POSTGRES_URL ||
     "";
+const DATABASE_URL = DATABASE_URL_RAW || (
+    POSTGRES_HOST && POSTGRES_USER
+        ? `postgresql://${encodeURIComponent(POSTGRES_USER)}:${encodeURIComponent(POSTGRES_PASSWORD)}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}?sslmode=require`
+        : ""
+);
 const DB_SSL_ENABLED = String(process.env.DB_SSL_ENABLED || "true").toLowerCase() !== "false";
 const DB_SSL_REJECT_UNAUTHORIZED = String(process.env.DB_SSL_REJECT_UNAUTHORIZED || "false").toLowerCase() === "true";
 const DB_CONNECT_TIMEOUT = Number(process.env.DB_CONNECT_TIMEOUT || 6000);
