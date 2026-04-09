@@ -227,7 +227,9 @@
                 mostrarPopup("Erro ao cadastrar: " + res.error, 'error');
                 return;
             }
-            mostrarPopup("Curso cadastrado com sucesso!", 'success');
+            const totalAvisos = Number(res.avisos_processados) || 0;
+            const sufixoAvisos = totalAvisos === 1 ? '1 interessado foi avisado automaticamente.' : `${totalAvisos} interessados foram avisados automaticamente.`;
+            mostrarPopup(`Curso cadastrado com sucesso! ${sufixoAvisos}`, 'success');
             fecharModal();
             carregarCursosAdmin(); 
         })

@@ -1351,7 +1351,8 @@ async function createApp() {
 
             res.json({
                 status: "ok",
-                msg: `Curso criado e ${totalAvisados} aviso(s) processado(s) automaticamente.`
+                msg: `Curso criado e ${totalAvisados} aviso(s) processado(s) automaticamente.`,
+                avisos_processados: totalAvisados
             });
 
         } catch (err) {
