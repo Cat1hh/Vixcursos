@@ -513,6 +513,15 @@ body.dark-theme .footer-col h4 {
 }
 .v0-select:focus { border-color: #38bdf8; }
 
+#filtro-categoria {
+    color: #111827;
+}
+
+#filtro-categoria option {
+    color: #111827;
+    background: #ffffff;
+}
+
 .btn {
     display: inline-flex; align-items: center; justify-content: center;
     border-radius: var(--radius); font-weight: 500; font-size: 0.875rem;
