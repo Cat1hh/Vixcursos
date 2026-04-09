@@ -1,14 +1,17 @@
 /* =========================================================
    1. INICIALIZAÇÃO E SPLASH SCREEN
 ========================================================= */
+document.body.classList.add('splash-active');
+
 window.addEventListener('load', () => {
     setTimeout(() => {
         const splash = document.getElementById('splash-screen');
         if (splash) {
-            splash.style.opacity = '0'; 
+            splash.classList.add('is-hidden');
             setTimeout(() => splash.remove(), 500);
         }
-    }, 4000); 
+        document.body.classList.remove('splash-active');
+    }, 2200);
 });
 
 document.addEventListener("DOMContentLoaded", inicializarPortal);
