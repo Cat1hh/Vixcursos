@@ -5,6 +5,39 @@
         document.getElementById('formCriarCurso').reset();
     }
 
+    function mostrarPopup(mensagem, tipo = 'info') {
+        const icones = {
+            success: 'OK',
+            error: '!',
+            warning: '!',
+            info: 'i'
+        };
+
+        let container = document.getElementById('admin-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'admin-toast-container';
+            container.className = 'admin-toast-container';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `admin-toast ${tipo}`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+
+        toast.innerHTML = `
+            <span class="admin-toast-icon">${icones[tipo] || 'i'}</span>
+            <div class="admin-toast-content">${mensagem}</div>
+            <button type="button" class="admin-toast-close" aria-label="Fechar">x</button>
+        `;
+
+        const removerToast = () => toast.remove();
+        toast.querySelector('.admin-toast-close').addEventListener('click', removerToast);
+        container.appendChild(toast);
+        setTimeout(removerToast, 4200);
+    }
+
     function deveRedirecionarLogin(res) {
         return res.status === 401 || (res.redirected && String(res.url || '').includes('/admin/login.html'));
     }
@@ -143,16 +176,16 @@
         .then(r => lerJsonOuLancar(r))
         .then(res => {
             if (res.error) {
-                alert("Erro ao cadastrar: " + res.error);
+                mostrarPopup("Erro ao cadastrar: " + res.error, 'error');
                 return;
             }
-            alert("Curso cadastrado com sucesso! 🚀");
+            mostrarPopup("Curso cadastrado com sucesso!", 'success');
             fecharModal();
             carregarCursosAdmin(); 
         })
         .catch(err => {
             console.error(err);
-            alert("Erro na conexão com o servidor.");
+            mostrarPopup("Erro na conexão com o servidor.", 'error');
         });
     }
 
@@ -165,7 +198,7 @@
             carregarCursosAdmin();
         } catch (err) {
             console.error(err);
-            alert("Erro de conexão.");
+            mostrarPopup("Erro de conexão.", 'error');
         }
     }
 

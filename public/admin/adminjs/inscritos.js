@@ -6,6 +6,39 @@ let cursosGlobais = [];
 let cursoAbertoAtual = null; 
 let alunosGlobais = []; // NOVO: Guarda a lista de alunos daquele curso
 
+function mostrarPopup(mensagem, tipo = 'info') {
+    const icones = {
+        success: 'OK',
+        error: '!',
+        warning: '!',
+        info: 'i'
+    };
+
+    let container = document.getElementById('admin-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'admin-toast-container';
+        container.className = 'admin-toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `admin-toast ${tipo}`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+
+    toast.innerHTML = `
+        <span class="admin-toast-icon">${icones[tipo] || 'i'}</span>
+        <div class="admin-toast-content">${mensagem}</div>
+        <button type="button" class="admin-toast-close" aria-label="Fechar">x</button>
+    `;
+
+    const removerToast = () => toast.remove();
+    toast.querySelector('.admin-toast-close').addEventListener('click', removerToast);
+    container.appendChild(toast);
+    setTimeout(removerToast, 4200);
+}
+
 async function lerJsonOuLancar(res) {
     if (res.status === 401 || (res.redirected && String(res.url || '').includes('/admin/login.html'))) {
         window.location.href = '/admin/login.html';
@@ -258,12 +291,12 @@ function voltarParaCursos() {
 
 function gerarPdfInscritos() {
     if (!cursoAbertoAtual) {
-        alert('Selecione um curso primeiro.');
+        mostrarPopup('Selecione um curso primeiro.', 'warning');
         return;
     }
 
     if (!window.jspdf || !window.jspdf.jsPDF) {
-        alert('Biblioteca de PDF não carregou. Recarregue a página.');
+        mostrarPopup('Biblioteca de PDF não carregou. Recarregue a página.', 'warning');
         return;
     }
 
@@ -314,13 +347,13 @@ async function excluirAluno(idAluno, nomeAluno) {
         try {
             const res = await fetch(`/api/inscricoes/${idAluno}`, { method: 'DELETE' });
             if (res.ok) {
-                alert(`✅ Inscrição removida! Vaga devolvida.`);
+                mostrarPopup('Inscrição removida. Vaga devolvida.', 'success');
                 abrirListaAlunos(cursoAbertoAtual.id);
             } else {
-                alert("Erro ao tentar excluir no banco de dados.");
+                mostrarPopup('Erro ao tentar excluir no banco de dados.', 'error');
             }
         } catch (err) {
-            alert("Falha na comunicação com o servidor.");
+            mostrarPopup('Falha na comunicação com o servidor.', 'error');
         }
     }
 }
@@ -334,21 +367,21 @@ async function confirmarMatricula(idAluno, nomeAluno) {
         const data = await res.json();
 
         if (!res.ok) {
-            alert(data.error || 'Erro ao confirmar matrícula.');
+            mostrarPopup(data.error || 'Erro ao confirmar matrícula.', 'error');
             return;
         }
 
         if (data.status === 'ja-confirmada') {
-            alert('Matrícula já estava confirmada.');
+            mostrarPopup('Matrícula já estava confirmada.', 'info');
         } else if (data.email === 'falhou') {
-            alert('Matrícula confirmada, mas o e-mail não foi enviado.');
+            mostrarPopup('Matrícula confirmada, mas o e-mail não foi enviado.', 'warning');
         } else {
-            alert('✅ Matrícula confirmada e e-mail enviado!');
+            mostrarPopup('Matrícula confirmada e e-mail enviado!', 'success');
         }
 
         abrirListaAlunos(cursoAbertoAtual.id);
     } catch (err) {
-        alert('Falha na comunicação com o servidor.');
+        mostrarPopup('Falha na comunicação com o servidor.', 'error');
     }
 }
 
