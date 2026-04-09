@@ -106,6 +106,10 @@ body::after {
     box-shadow: 0 12px 24px rgba(79, 70, 229, 0.35);
 }
 
+.brand-icon i {
+    font-size: 1.2rem;
+}
+
 .brand-name {
     color: #f8fafc;
     font-size: 1rem;
@@ -167,6 +171,28 @@ body::after {
     width: 22px;
     text-align: center;
     flex-shrink: 0;
+}
+
+.nav-link .ni i {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.icon-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 6px;
+    vertical-align: -1px;
+}
+
+.icon-only {
+    margin-right: 0;
+}
+
+.btn i.bi {
+    font-size: 0.9rem;
+    line-height: 1;
 }
 
 .sidebar-sep {

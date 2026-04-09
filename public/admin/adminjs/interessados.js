@@ -39,7 +39,9 @@ async function carregarInteressados() {
             else if (perfilBusca === 'manutencao') contagemGrafico[3]++;
 
             const classeStatus = lead.status === 'enviado' ? 'enviado' : 'aguardando';
-            const textoStatus = lead.status === 'enviado' ? '✅ Enviado' : '⏳ Esperando curso';
+            const textoStatus = lead.status === 'enviado'
+                ? '<i class="bi bi-check-circle-fill" aria-hidden="true"></i> Enviado'
+                : '<i class="bi bi-hourglass-split" aria-hidden="true"></i> Esperando curso';
 
             // Formatação do nome da categoria com a primeira letra maiúscula
             const perfilCapitalizado = lead.perfil_curso.charAt(0).toUpperCase() + lead.perfil_curso.slice(1);
@@ -77,7 +79,7 @@ function inicializarGrafico(tipo) {
     meuGrafico = new Chart(ctx, {
         type: tipo,
         data: {
-            labels: ['Gastronomia 🍰', 'Tecnologia 💻', 'Beleza ✂️', 'Manutenção 🔧'],
+            labels: ['Gastronomia', 'Tecnologia', 'Beleza', 'Manutenção'],
             datasets: [{
                 label: 'Número de Interessados (Demanda Real)',
                 data: contagemGrafico, 

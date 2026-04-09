@@ -178,7 +178,7 @@ async function carregarCursos() {
                     <td>${curso.vagas} restantes</td>
                     <td>${statusHtml}</td>
                     <td>
-                        <button onclick="abrirListaAlunos(${curso.id})" class="btn-acao btn-ver">👥 Ver Lista</button>
+                        <button onclick="abrirListaAlunos(${curso.id})" class="btn-acao btn-ver"><i class="bi bi-people-fill" aria-hidden="true"></i> Ver Lista</button>
                     </td>
                 </tr>
             `;
@@ -227,12 +227,12 @@ async function abrirListaAlunos(idCurso) {
                     ? (aluno.tipo_necessidade_especial || 'Não informado')
                     : 'Não';
                 const badgeNecessidade = possuiNecessidadeEspecial
-                    ? `<span class="badge-necessidade sim">⚠️ ${escapeHtml(tipoNecessidadeEspecial)}</span>`
-                    : '<span class="badge-necessidade nao">✅ Não</span>';
+                    ? `<span class="badge-necessidade sim"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> ${escapeHtml(tipoNecessidadeEspecial)}</span>`
+                    : '<span class="badge-necessidade nao"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Não</span>';
 
                 const botaoConfirmacao = matriculaConfirmada
-                    ? `<span class="btn-acao btn-confirmado">✅ Confirmada</span>`
-                    : `<button onclick="confirmarMatricula(${aluno.id}, '${nomeEscapadoJs}')" class="btn-acao btn-confirmar">✅ Confirmar Matrícula</button>`;
+                    ? `<span class="btn-acao btn-confirmado"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Confirmada</span>`
+                    : `<button onclick="confirmarMatricula(${aluno.id}, '${nomeEscapadoJs}')" class="btn-acao btn-confirmar"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Confirmar Matrícula</button>`;
 
                 tbody.innerHTML += `
                     <tr class="${possuiNecessidadeEspecial ? 'aluno-necessidade' : ''}">
@@ -245,11 +245,11 @@ async function abrirListaAlunos(idCurso) {
                             <div class="acoes-container">
                                 ${botaoConfirmacao}
                                 <div class="acoes-menu">
-                                    <button class="acoes-toggle" onclick="toggleAcoesMenu(event)" title="Mais ações">⋮</button>
+                                    <button class="acoes-toggle" onclick="toggleAcoesMenu(event)" title="Mais ações"><i class="bi bi-three-dots-vertical" aria-hidden="true"></i></button>
                                     <div class="acoes-dropdown" data-aluno-id="${aluno.id}">
-                                        <button onclick="abrirFichaAluno(${aluno.id})" title="Ver detalhes completos">📄 Ficha</button>
-                                        <a href="${linkWhats}" target="_blank" ${foneLimpo ? '' : 'style="pointer-events:none;opacity:.55;"'} title="Abrir WhatsApp">💬 WhatsApp</a>
-                                        <button onclick="excluirAluno(${aluno.id}, '${nomeEscapadoJs}')" title="Remover e liberar vaga">❌ Excluir</button>
+                                        <button onclick="abrirFichaAluno(${aluno.id})" title="Ver detalhes completos"><i class="bi bi-file-earmark-text" aria-hidden="true"></i> Ficha</button>
+                                        <a href="${linkWhats}" target="_blank" ${foneLimpo ? '' : 'style="pointer-events:none;opacity:.55;"'} title="Abrir WhatsApp"><i class="bi bi-whatsapp" aria-hidden="true"></i> WhatsApp</a>
+                                        <button onclick="excluirAluno(${aluno.id}, '${nomeEscapadoJs}')" title="Remover e liberar vaga"><i class="bi bi-trash" aria-hidden="true"></i> Excluir</button>
                                     </div>
                                 </div>
                             </div>
@@ -283,7 +283,7 @@ function abrirFichaAluno(idAluno) {
         }
 
         if (String(documento).startsWith('data:application/pdf')) {
-            return `<a href="${documento}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;background:#0f172a;border:1px solid #334155;color:#e2e8f0;text-decoration:none;">📄 Abrir PDF do ${label}</a>`;
+            return `<a href="${documento}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;background:#0f172a;border:1px solid #334155;color:#e2e8f0;text-decoration:none;"><i class="bi bi-filetype-pdf" aria-hidden="true"></i> Abrir PDF do ${label}</a>`;
         }
 
         return `<img src="${documento}" alt="Documento ${label}" style="width:100%;max-height:280px;object-fit:contain;border-radius:10px;border:1px solid #334155;background:#0f172a;padding:8px;">`;
@@ -294,7 +294,7 @@ function abrirFichaAluno(idAluno) {
 
     // Monta a grade com os detalhes organizados
     conteudo.innerHTML = `
-        <div class="detalhe-secao">👤 Dados Pessoais</div>
+        <div class="detalhe-secao"><i class="bi bi-person-vcard" aria-hidden="true"></i> Dados Pessoais</div>
         <div class="detalhe-item"><span>Nome Completo</span><strong>${checar(aluno.nome)}</strong></div>
         <div class="detalhe-item"><span>CPF</span><strong>${checar(formatarCpf(aluno.cpf))}</strong></div>
         <div class="detalhe-item"><span>RG</span><strong>${checar(aluno.rg)}</strong></div>
@@ -302,16 +302,16 @@ function abrirFichaAluno(idAluno) {
         <div class="detalhe-item"><span>Celular Principal</span><strong>${checar(aluno.telefone)}</strong></div>
         <div class="detalhe-item"><span>Data da Pré-inscrição</span><strong>${checar(formatarDataBr(aluno.data))}</strong></div>
         <div class="detalhe-item"><span>Escolaridade</span><strong>${checar(aluno.escolaridade)}</strong></div>
-        <div class="detalhe-item"><span>Mora/Trabalha em Vitória?</span><strong>${aluno.mora_vitoria === 'sim' ? '✅ Sim' : (aluno.mora_vitoria === 'nao' ? '❌ Não' : checar(aluno.mora_vitoria))}</strong></div>
-        <div class="detalhe-item"><span>Necessidade Especial?</span><strong>${String(aluno.possui_necessidade_especial || '').toLowerCase() === 'sim' ? '✅ Sim' : '❌ Não'}</strong></div>
+        <div class="detalhe-item"><span>Mora/Trabalha em Vitória?</span><strong>${aluno.mora_vitoria === 'sim' ? '<i class="bi bi-check-circle-fill" aria-hidden="true"></i> Sim' : (aluno.mora_vitoria === 'nao' ? '<i class="bi bi-x-circle-fill" aria-hidden="true"></i> Não' : checar(aluno.mora_vitoria))}</strong></div>
+        <div class="detalhe-item"><span>Necessidade Especial?</span><strong>${String(aluno.possui_necessidade_especial || '').toLowerCase() === 'sim' ? '<i class="bi bi-check-circle-fill" aria-hidden="true"></i> Sim' : '<i class="bi bi-x-circle-fill" aria-hidden="true"></i> Não'}</strong></div>
         <div class="detalhe-item"><span>Tipo da Necessidade</span><strong>${String(aluno.possui_necessidade_especial || '').toLowerCase() === 'sim' ? checar(aluno.tipo_necessidade_especial) : 'Não possui'}</strong></div>
         
-        <div class="detalhe-secao">📞 Contato & Endereço</div>
+        <div class="detalhe-secao"><i class="bi bi-telephone" aria-hidden="true"></i> Contato & Endereço</div>
         <div class="detalhe-item"><span>CEP</span><strong>${checar(aluno.cep)}</strong></div>
         <div class="detalhe-item"><span>Endereço</span><strong>${checar(aluno.rua)}, Nº ${checar(aluno.numero)} - ${checar(aluno.bairro)}</strong></div>
         <div class="detalhe-item"><span>Município</span><strong>${checar(aluno.municipio)}</strong></div>
 
-        <div class="detalhe-secao">🪪 Documentos enviados</div>
+        <div class="detalhe-secao"><i class="bi bi-card-text" aria-hidden="true"></i> Documentos enviados</div>
         <div class="detalhe-item" style="grid-column: 1 / -1;"><span>CPF</span><strong>${cpfDocumento}</strong></div>
         <div class="detalhe-item" style="grid-column: 1 / -1;"><span>RG</span><strong>${rgDocumento}</strong></div>
     `;

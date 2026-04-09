@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alunos Inscritos | Vix Cursos Admin</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css_adm/admin.css">
     <style>
         /* Classes usadas pelo inscritos.js na renderização dinâmica */
@@ -45,7 +46,7 @@
 
 <nav class="admin-sidebar">
     <a href="menu.html" class="sidebar-brand">
-        <span class="brand-icon">🎓</span>
+        <span class="brand-icon"><i class="bi bi-mortarboard-fill" aria-hidden="true"></i></span>
         <div>
             <span class="brand-name">Vix Cursos</span>
             <span class="brand-sub">Área administrativa</span>
@@ -53,13 +54,13 @@
     </a>
     <div class="sidebar-nav">
         <div class="nav-section">Principal</div>
-        <a href="menu.html" class="nav-link"><span class="ni">🏠</span> Dashboard</a>
+        <a href="menu.html" class="nav-link"><span class="ni"><i class="bi bi-house-door-fill" aria-hidden="true"></i></span> Dashboard</a>
         <div class="nav-section">Academia</div>
-        <a href="inscritos.html" class="nav-link active"><span class="ni">👥</span> Alunos Inscritos</a>
-        <a href="interessados.html" class="nav-link"><span class="ni">📋</span> Interessados</a>
-        <a href="cursos.html" class="nav-link"><span class="ni">📊</span> Monitoramento</a>
+        <a href="inscritos.html" class="nav-link active"><span class="ni"><i class="bi bi-people-fill" aria-hidden="true"></i></span> Alunos Inscritos</a>
+        <a href="interessados.html" class="nav-link"><span class="ni"><i class="bi bi-clipboard-data" aria-hidden="true"></i></span> Interessados</a>
+        <a href="cursos.html" class="nav-link"><span class="ni"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i></span> Monitoramento</a>
         <div class="sidebar-sep"></div>
-        <a href="../pages/index.html" class="nav-link"><span class="ni">🌐</span> Ver Site</a>
+        <a href="../pages/index.html" class="nav-link"><span class="ni"><i class="bi bi-globe-americas" aria-hidden="true"></i></span> Ver Site</a>
     </div>
 </nav>
 
@@ -70,7 +71,7 @@
             <p id="subtituloPaginaInscritos">Selecione uma turma para ver a lista completa</p>
         </div>
         <div class="ph-right" id="acoesCabecalho">
-            <a href="menu.html" class="btn btn-outline">← Menu Admin</a>
+            <a href="menu.html" class="btn btn-outline"><i class="bi bi-arrow-left" aria-hidden="true"></i> Menu Admin</a>
         </div>
     </div>
 
@@ -79,7 +80,7 @@
         <!-- TELA 1: Lista de cursos -->
         <div id="telaCursos">
             <div class="card">
-                <div class="card-head"><h2>📚 Cursos em Andamento</h2></div>
+                <div class="card-head"><h2><i class="bi bi-journal-bookmark-fill icon-inline" aria-hidden="true"></i>Cursos em Andamento</h2></div>
                 <div class="table-wrap">
                     <table>
                         <thead>
@@ -106,13 +107,13 @@
                     <div>
                         <h2 id="tituloCursoDetalhe">Nome do Curso</h2>
                         <p class="text-sm text-muted" style="margin-top:4px;">
-                            📍 <span id="localCursoDetalhe">—</span> &nbsp;|&nbsp;
-                            👥 <span id="vagasCursoDetalhe">—</span>
+                            <i class="bi bi-geo-alt" aria-hidden="true"></i> <span id="localCursoDetalhe">—</span> &nbsp;|&nbsp;
+                            <i class="bi bi-people" aria-hidden="true"></i> <span id="vagasCursoDetalhe">—</span>
                         </p>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <button id="btnGerarPdfInscritos" onclick="gerarPdfInscritos()" class="btn-acao btn-pdf" style="display:none;">📄 Gerar PDF</button>
-                        <button onclick="voltarParaCursos()" class="btn btn-outline btn-sm">← Voltar</button>
+                        <button id="btnGerarPdfInscritos" onclick="gerarPdfInscritos()" class="btn-acao btn-pdf" style="display:none;"><i class="bi bi-filetype-pdf" aria-hidden="true"></i> Gerar PDF</button>
+                        <button onclick="voltarParaCursos()" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar</button>
                     </div>
                 </div>
                 <div class="table-wrap">

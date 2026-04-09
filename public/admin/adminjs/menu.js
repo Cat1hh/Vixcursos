@@ -175,20 +175,20 @@
                         <span style="font-weight: 500;">${c.nome}</span>
                     </td>
                     <td style="font-size: 0.9rem;">
-                        📅 ${c.data_inicio || '-'} até ${c.data_termino || '-'}<br>
-                        ⏰ ${c.horario_inicio || '-'} às ${c.horario_termino || '-'}
+                        <i class="bi bi-calendar3 icon-inline" aria-hidden="true"></i>${c.data_inicio || '-'} até ${c.data_termino || '-'}<br>
+                        <i class="bi bi-clock icon-inline" aria-hidden="true"></i>${c.horario_inicio || '-'} às ${c.horario_termino || '-'}
                     </td>
                     <td style="font-size: 0.9rem;">
-                        📍 ${c.local || 'Não definido'}<br>
-                        🏫 ${c.modalidade || '-'}
+                        <i class="bi bi-geo-alt icon-inline" aria-hidden="true"></i>${c.local || 'Não definido'}<br>
+                        <i class="bi bi-building icon-inline" aria-hidden="true"></i>${c.modalidade || '-'}
                     </td>
                     <td><strong>${c.vagas}</strong> rest.</td>
                     <td><span class="badge ${badgeClass}">${statusTexto}</span></td>
                     <td class="acoes">
-                        <a href="inscritos.html?curso=${c.id}" class="btn btn-outline" title="Ver Inscritos">👥</a>
+                        <a href="inscritos.html?curso=${c.id}" class="btn btn-outline" title="Ver Inscritos" aria-label="Ver inscritos"><i class="bi bi-people-fill" aria-hidden="true"></i></a>
                         ${c.status !== 'esgotado' 
-                            ? `<button onclick="esgotarCurso(${c.id}, '${c.nome}')" class="btn btn-danger" title="Esgotar vagas">🚫</button>` 
-                            : `<button class="btn btn-outline" disabled style="opacity: 0.5;">🚫</button>`
+                            ? `<button onclick="esgotarCurso(${c.id}, '${c.nome}')" class="btn btn-danger" title="Esgotar vagas" aria-label="Esgotar vagas"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>` 
+                            : `<button class="btn btn-outline" disabled style="opacity: 0.5;" aria-label="Curso esgotado"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>`
                         }
                     </td>
                 </tr>`;
