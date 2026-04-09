@@ -233,21 +233,24 @@ async function obterCursosParaEstatisticas(cursosCarregados = null) {
     return res.json();
 }
 
-function contarCursosDisponiveis(cursos) {
+function somarVagasDisponiveis(cursos) {
     if (!Array.isArray(cursos)) {
         return 0;
     }
 
-    return cursos.filter((curso) => {
+    return cursos.reduce((total, curso) => {
         const vagas = parseInt(curso.vagas, 10) || 0;
-        return curso.status !== 'esgotado' && vagas > 0;
-    }).length;
+        if (curso.status !== 'esgotado' && vagas > 0) {
+            return total + vagas;
+        }
+        return total;
+    }, 0);
 }
 
 async function carregarEstatisticas(cursosCarregados = null) {
     try {
         const cursos = await obterCursosParaEstatisticas(cursosCarregados);
-        const totalDisponiveis = contarCursosDisponiveis(cursos);
+        const totalDisponiveis = somarVagasDisponiveis(cursos);
         const elVagasHoje = document.getElementById('vagasHoje');
 
         if (elVagasHoje) {
