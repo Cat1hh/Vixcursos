@@ -1874,34 +1874,35 @@ async function createApp() {
                 RETURNING id
             `, [nome, whatsapp, email, regiao, perfil]);
 
-            await notificarNovoLeadSeHouverCursoAtivo({
-                id: resultado[0].id,
-                nome,
-                whatsapp,
-                email,
-                regiao,
-                perfil_curso: perfil,
-                status: 'aguardando'
+            let avisoAutomatico = false;
+            let avisoErro = null;
+
+            try {
+                avisoAutomatico = await notificarNovoLeadSeHouverCursoAtivo({
+                    id: resultado[0].id,
+                    nome,
+                    whatsapp,
+                    email,
+                    regiao,
+                    perfil_curso: perfil,
+                    status: 'aguardando'
+                });
+            } catch (err) {
+                avisoErro = err?.message || 'falha-desconhecida';
+                console.error('Erro ao disparar aviso automático para novo lead:', err);
+            }
+
+            res.json({
+                message: "Interesse salvo com sucesso!",
+                aviso_automatico: avisoAutomatico,
+                aviso_erro: avisoErro
             });
-            
-            res.json({ message: "Interesse salvo com sucesso!" });
         } catch (err) {
             console.error("Erro ao salvar lead:", err);
             res.status(500).json({ error: "Erro ao salvar os dados" });
         }
     });
 
-    // Listar todos os interessados no Admin
-    app.get('/api/interessados', exigirAuthAdmin, async (req, res) => {
-        try {
-            const [rows] = await db.query(`SELECT * FROM interessados ORDER BY id DESC`);
-            res.json(rows);
-        } catch (err) {
-            return responderErroBanco(res, err, "Erro ao listar interessados");
-        }
-    });
-
-    // Alterar Status do Contato (Aguardando/Enviado)
     app.put('/api/interessados/:id/status', exigirAuthAdmin, async (req, res) => {
         try {
             const { status } = req.body;
