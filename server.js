@@ -64,9 +64,13 @@ const DATABASE_URL_FROM_PARTS = POSTGRES_HOST && POSTGRES_USER
 const DATABASE_URL = ajustarUrlPgCompat(DATABASE_URL_RAW) || DATABASE_URL_FROM_PARTS;
 const DB_SSL_ENABLED = String(process.env.DB_SSL_ENABLED || "true").toLowerCase() !== "false";
 const DB_SSL_REJECT_UNAUTHORIZED = String(process.env.DB_SSL_REJECT_UNAUTHORIZED || "false").toLowerCase() === "true";
-const DB_CONNECT_TIMEOUT = Number(process.env.DB_CONNECT_TIMEOUT || 6000);
-const DB_QUERY_TIMEOUT = Number(process.env.DB_QUERY_TIMEOUT || 7000);
-const DB_CONNECTION_LIMIT = Number(process.env.DB_CONNECTION_LIMIT || 10);
+const DB_CONNECT_TIMEOUT = Number(process.env.DB_CONNECT_TIMEOUT || 10000);
+const DB_QUERY_TIMEOUT = Number(process.env.DB_QUERY_TIMEOUT || 15000);
+const DB_CONNECTION_LIMIT = Number(process.env.DB_CONNECTION_LIMIT || (process.env.VERCEL ? 2 : 10));
+const DB_IDLE_TIMEOUT = Number(process.env.DB_IDLE_TIMEOUT || 10000);
+const DB_MAX_USES = Number(process.env.DB_MAX_USES || 7500);
+const DB_ENABLE_RETRY = String(process.env.DB_ENABLE_RETRY || "true").toLowerCase() !== "false";
+const DB_AUTO_INIT = String(process.env.DB_AUTO_INIT || (process.env.NODE_ENV === "production" ? "false" : "true")).toLowerCase() === "true";
 const DB_HOST_REF = `${POSTGRES_HOST} ${DATABASE_URL}`.toLowerCase();
 const DB_IS_SUPABASE = DB_HOST_REF.includes("supabase.co") || DB_HOST_REF.includes("supabase.com");
 
@@ -130,6 +134,27 @@ function eErroTimeoutBanco(erro) {
             "ENOTFOUND",
             "EHOSTUNREACH",
             "PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR"
+        ].includes(code)
+    );
+}
+
+function eErroTransitorioBanco(erro) {
+    const code = erro && erro.code;
+    return Boolean(
+        code && [
+            "ETIMEDOUT",
+            "ECONNRESET",
+            "ECONNREFUSED",
+            "ENOTFOUND",
+            "EHOSTUNREACH",
+            "57P01",
+            "57P02",
+            "57P03",
+            "53300",
+            "54000",
+            "08000",
+            "08003",
+            "08006"
         ].includes(code)
     );
 }
@@ -205,6 +230,9 @@ async function createApp() {
     console.log("[db] Connection limit:", DB_CONNECTION_LIMIT);
     console.log("[db] connectTimeout:", DB_CONNECT_TIMEOUT);
     console.log("[db] queryTimeout:", DB_QUERY_TIMEOUT);
+    console.log("[db] idleTimeout:", DB_IDLE_TIMEOUT);
+    console.log("[db] maxUses:", DB_MAX_USES);
+    console.log("[db] autoInit:", DB_AUTO_INIT);
     console.log("[db] SSL habilitado:", DB_SSL_ENABLED);
     console.log("[db] SSL rejectUnauthorized:", DB_SSL_REJECT_UNAUTHORIZED);
     console.log("[db] Host Supabase detectado:", DB_IS_SUPABASE);
@@ -212,18 +240,36 @@ async function createApp() {
     const pgPool = new Pool({
         connectionString: DATABASE_URL || undefined,
         max: DB_CONNECTION_LIMIT,
+        idleTimeoutMillis: DB_IDLE_TIMEOUT,
         connectionTimeoutMillis: DB_CONNECT_TIMEOUT,
         statement_timeout: DB_QUERY_TIMEOUT,
+        maxUses: DB_MAX_USES,
+        keepAlive: true,
+        allowExitOnIdle: true,
         ssl: DB_SSL_ENABLED
             ? { rejectUnauthorized: DB_IS_SUPABASE ? false : DB_SSL_REJECT_UNAUTHORIZED }
             : false
     });
 
+    pgPool.on("error", (erro) => {
+        console.error("[db] erro no pool PostgreSQL:", erro?.code || "sem_code", erro?.message || erro);
+    });
+
     const db = {
         query: async (sql, values) => {
             const text = typeof sql === "string" ? converterPlaceholdersSql(sql) : sql;
-            const result = await pgPool.query(text, values);
-            return [result.rows, result.fields];
+            try {
+                const result = await pgPool.query(text, values);
+                return [result.rows, result.fields];
+            } catch (erroPrimario) {
+                if (!DB_ENABLE_RETRY || !eErroTransitorioBanco(erroPrimario)) {
+                    throw erroPrimario;
+                }
+
+                console.warn("[db] falha transitoria. tentando novamente:", erroPrimario?.code || "sem_code");
+                const result = await pgPool.query(text, values);
+                return [result.rows, result.fields];
+            }
         },
         getConnection: async () => {
             const client = await pgPool.connect();
@@ -275,7 +321,11 @@ async function createApp() {
         }
     }
 
-    void inicializarBanco();
+    if (DB_AUTO_INIT) {
+        void inicializarBanco();
+    } else {
+        console.log("[db] Auto-init de schema desativado para reduzir carga em cold starts.");
+    }
 
     // ======================================
     // EMAIL
