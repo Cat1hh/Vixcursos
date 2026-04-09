@@ -974,8 +974,8 @@ async function createApp() {
                     TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
                     TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
                     COALESCE(fc.categoria, 'Geral') AS categoria, 
-                    COALESCE(fiMin.idade, '-') AS idade_min, 
-                    COALESCE(fiMax.idade, '-') AS idade_max,
+                    COALESCE(fiMin.idade::text, '-') AS idade_min, 
+                    COALESCE(fiMax.idade::text, '-') AS idade_max,
                     COALESCE(fm.modalidade, 'Não informada') AS modalidade, 
                     COALESCE(fl.local, 'Vitória') AS local, 
                     c.criado_em
@@ -1021,8 +1021,8 @@ async function createApp() {
                     TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
                     TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
                     COALESCE(fc.categoria, 'Geral') AS categoria, 
-                    COALESCE(fiMin.idade, '-') AS idade_min, 
-                    COALESCE(fiMax.idade, '-') AS idade_max,
+                    COALESCE(fiMin.idade::text, '-') AS idade_min, 
+                    COALESCE(fiMax.idade::text, '-') AS idade_max,
                     COALESCE(fm.modalidade, 'Não informada') AS modalidade, 
                     COALESCE(fl.local, 'Vitória') AS local, 
                     c.criado_em
@@ -1111,8 +1111,8 @@ async function createApp() {
                     TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
                     TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
                     COALESCE(fc.categoria, 'Geral') AS categoria, 
-                    COALESCE(fiMin.idade, '-') AS idade_min, 
-                    COALESCE(fiMax.idade, '-') AS idade_max,
+                    COALESCE(fiMin.idade::text, '-') AS idade_min, 
+                    COALESCE(fiMax.idade::text, '-') AS idade_max,
                     COALESCE(fm.modalidade, 'Não informada') AS modalidade, 
                     COALESCE(fl.local, 'Vitória') AS local, 
                     c.criado_em
