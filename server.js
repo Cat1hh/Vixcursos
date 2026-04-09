@@ -79,6 +79,7 @@ const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || "porto-admin-secret-cha
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 const SERVER_PORT = Number(process.env.PORT) || 3000;
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${SERVER_PORT}`);
 
 function lerCookie(req, nome) {
     const cookieHeader = req.headers.cookie || "";
@@ -221,7 +222,7 @@ app.get(["/admin", "/admin/"], (req, res) => {
     return res.redirect("/admin/login.html");
 });
 
-let baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${SERVER_PORT}`;
+let baseUrl = PUBLIC_BASE_URL;
 
 // Servir frontend
 app.use(express.static(path.join(__dirname, "public")));
@@ -558,6 +559,10 @@ async function createApp() {
         return `${baseUrl}/pre_inscricao.html?id=${curso.id}&nome=${encodeURIComponent(curso.nome || 'curso')}`;
     }
 
+    function montarLinkDetalhesCurso(curso) {
+        return `${baseUrl}/detalhes?id=${curso.id}`;
+    }
+
     const EMAIL_BRIDGE_CID = "vix-terceira-ponte";
     const EMAIL_BRIDGE_ASSET_PATH = path.join(__dirname, "public", "imagem", "terceira_ponte.png");
 
@@ -652,12 +657,13 @@ async function createApp() {
     }
 
     function montarEmailDisponibilidade({ nome, curso, perfil }) {
-        const link = montarLinkPreInscricao(curso);
+        const link = montarLinkDetalhesCurso(curso);
         const anexos = montarAnexosEmailPadrao();
 
         const conteudoHtml = `
             <p class="text">Ola, <span class="highlight">${nome}</span>.</p>
             <p class="text">Encontramos uma oportunidade alinhada ao seu perfil para o curso <span class="highlight">${curso.nome || "Qualificacao"}</span>.</p>
+            <p class="text">O curso já está disponível e você pode ver todos os detalhes antes de realizar a inscrição.</p>
 
             <div class="info-box">
                 <p class="info-item"><span class="info-icon">&#9679;</span><strong>Perfil:</strong> ${perfil || "Geral"}</p>
@@ -667,7 +673,7 @@ async function createApp() {
             </div>
 
             <div class="cta-wrap">
-                <a href="${link}" class="cta">Fazer pre-inscricao</a>
+                <a href="${link}" class="cta">Clique aqui para mais informações</a>
             </div>
         `;
 
@@ -684,14 +690,14 @@ async function createApp() {
     }
 
     function montarSmsDisponibilidade({ nome, curso, perfil }) {
-        const link = montarLinkPreInscricao(curso);
+        const link = montarLinkDetalhesCurso(curso);
         return [
             `Olá, ${nome}!`,
             `O curso de ${curso.nome || 'Qualificação'} que combina com o seu perfil de ${perfil} está disponível.`,
             curso.local ? `Local: ${curso.local}.` : null,
             curso.data_inicio && curso.data_termino ? `Período: ${curso.data_inicio} a ${curso.data_termino}.` : null,
             curso.horario_inicio && curso.horario_termino ? `Horário: ${curso.horario_inicio}h às ${curso.horario_termino}h.` : null,
-            `Acesse para fazer sua pré-inscrição: ${link}`
+            `Clique para ver mais informações: ${link}`
         ].filter(Boolean).join(' ');
     }
 
@@ -2090,7 +2096,7 @@ async function createApp() {
 if (require.main === module) {
     createApp()
         .then((app) => {
-            baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:${SERVER_PORT}`;
+            baseUrl = PUBLIC_BASE_URL;
 
             const server = app.listen(SERVER_PORT, () => {
                 console.log(`Servidor rodando em http://localhost:${SERVER_PORT}`);
