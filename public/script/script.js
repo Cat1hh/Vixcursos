@@ -433,7 +433,7 @@ function irParaDetalhes(id) {
 
 async function carregarFiltros() {
     try {
-        let r1 = await fetch("http://localhost:3000/public/idade");
+        let r1 = await fetch("/public/idade");
         let idades = await r1.json();
         let selIdade = document.querySelector("#filtro-idade");
         if(selIdade) {
@@ -441,7 +441,7 @@ async function carregarFiltros() {
             idades.forEach(i => selIdade.innerHTML += `<option>${i.idade}</option>`);
         }
 
-        let r2 = await fetch("http://localhost:3000/public/categoria");
+        let r2 = await fetch("/public/categoria");
         let categorias = await r2.json();
         let selCategoria = document.querySelector("#filtro-categoria");
         if(selCategoria) {
@@ -449,7 +449,7 @@ async function carregarFiltros() {
             categorias.forEach(c => selCategoria.innerHTML += `<option>${c.categoria}</option>`);
         }
 
-        let r4 = await fetch("http://localhost:3000/public/local");
+        let r4 = await fetch("/public/local");
         let locais = await r4.json();
         let selLocal = document.querySelector("#filtro-local");
         if(selLocal) {
