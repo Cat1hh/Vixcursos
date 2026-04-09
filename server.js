@@ -56,6 +56,8 @@ const DB_SSL_REJECT_UNAUTHORIZED = String(process.env.DB_SSL_REJECT_UNAUTHORIZED
 const DB_CONNECT_TIMEOUT = Number(process.env.DB_CONNECT_TIMEOUT || 6000);
 const DB_QUERY_TIMEOUT = Number(process.env.DB_QUERY_TIMEOUT || 7000);
 const DB_CONNECTION_LIMIT = Number(process.env.DB_CONNECTION_LIMIT || 10);
+const DB_HOST_REF = `${POSTGRES_HOST} ${DATABASE_URL}`.toLowerCase();
+const DB_IS_SUPABASE = DB_HOST_REF.includes("supabase.co") || DB_HOST_REF.includes("supabase.com");
 
 const ADMIN_COOKIE_NAME = "porto_admin_token";
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || "porto-admin-secret-change-me";
@@ -192,6 +194,8 @@ async function createApp() {
     console.log("[db] connectTimeout:", DB_CONNECT_TIMEOUT);
     console.log("[db] queryTimeout:", DB_QUERY_TIMEOUT);
     console.log("[db] SSL habilitado:", DB_SSL_ENABLED);
+    console.log("[db] SSL rejectUnauthorized:", DB_SSL_REJECT_UNAUTHORIZED);
+    console.log("[db] Host Supabase detectado:", DB_IS_SUPABASE);
 
     const pgPool = new Pool({
         connectionString: DATABASE_URL || undefined,
@@ -199,7 +203,7 @@ async function createApp() {
         connectionTimeoutMillis: DB_CONNECT_TIMEOUT,
         statement_timeout: DB_QUERY_TIMEOUT,
         ssl: DB_SSL_ENABLED
-            ? { rejectUnauthorized: DB_SSL_REJECT_UNAUTHORIZED }
+            ? { rejectUnauthorized: DB_IS_SUPABASE ? false : DB_SSL_REJECT_UNAUTHORIZED }
             : false
     });
 
@@ -1413,10 +1417,6 @@ async function createApp() {
                     telefone,
                     cpf,
                     rg,
-                    TO_CHAR(c.data_inicio, 'DD/MM/YYYY') AS data_inicio,
-                    TO_CHAR(c.data_termino, 'DD/MM/YYYY') AS data_termino,
-                    TO_CHAR(c.horario_inicio, 'HH24:MI') AS horario_inicio,
-                    TO_CHAR(c.horario_termino, 'HH24:MI') AS horario_termino
                     rua,
                     bairro,
                     municipio,
