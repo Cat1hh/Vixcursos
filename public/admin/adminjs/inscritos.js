@@ -6,6 +6,24 @@ let cursosGlobais = [];
 let cursoAbertoAtual = null; 
 let alunosGlobais = []; // NOVO: Guarda a lista de alunos daquele curso
 
+function obterCursoIdDaUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const valor = params.get('curso');
+    if (!valor) return null;
+    const id = Number(valor);
+    return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function atualizarUrlCurso(idCurso) {
+    const url = new URL(window.location.href);
+    if (idCurso) {
+        url.searchParams.set('curso', String(idCurso));
+    } else {
+        url.searchParams.delete('curso');
+    }
+    window.history.replaceState({}, '', url);
+}
+
 function mostrarPopup(mensagem, tipo = 'info') {
     const icones = {
         success: 'OK',
@@ -194,6 +212,12 @@ async function carregarCursos() {
 ========================================================= */
 async function abrirListaAlunos(idCurso) {
     cursoAbertoAtual = cursosGlobais.find(c => c.id === idCurso);
+    if (!cursoAbertoAtual) {
+        mostrarPopup('Curso não encontrado para abrir a lista de inscritos.', 'warning');
+        return;
+    }
+
+    atualizarUrlCurso(idCurso);
     const btnPdf = document.getElementById('btnGerarPdfInscritos');
 
     document.getElementById('tituloCursoDetalhe').innerText = cursoAbertoAtual.nome;
@@ -332,6 +356,8 @@ function voltarParaCursos() {
     const btnPdf = document.getElementById('btnGerarPdfInscritos');
     if (btnPdf) btnPdf.style.display = 'none';
 
+    atualizarUrlCurso(null);
+
     document.getElementById('telaAlunos').classList.add('tela-oculta');
     document.getElementById('telaCursos').classList.remove('tela-oculta');
     carregarCursos();
@@ -446,4 +472,20 @@ async function confirmarMatricula(idAluno, nomeAluno) {
     }
 }
 
-carregarCursos();
+async function iniciarPaginaInscritos() {
+    await carregarCursos();
+
+    const cursoId = obterCursoIdDaUrl();
+    if (!cursoId) return;
+
+    const cursoExiste = cursosGlobais.some(c => c.id === cursoId);
+    if (!cursoExiste) {
+        mostrarPopup('O curso informado no link não foi encontrado.', 'warning');
+        atualizarUrlCurso(null);
+        return;
+    }
+
+    abrirListaAlunos(cursoId);
+}
+
+iniciarPaginaInscritos();
