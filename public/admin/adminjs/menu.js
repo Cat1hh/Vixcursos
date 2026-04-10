@@ -186,6 +186,7 @@
                     <td><span class="badge ${badgeClass}">${statusTexto}</span></td>
                     <td class="acoes">
                         <a href="inscritos.html?curso=${c.id}" class="btn btn-outline" title="Ver Inscritos" aria-label="Ver inscritos"><i class="bi bi-people-fill" aria-hidden="true"></i></a>
+                        <button onclick="aumentarVagas(${c.id}, '${c.nome}')" class="btn btn-outline" title="Aumentar vagas" aria-label="Aumentar vagas"><i class="bi bi-plus-circle" aria-hidden="true"></i></button>
                         ${c.status !== 'esgotado' 
                             ? `<button onclick="esgotarCurso(${c.id}, '${c.nome}')" class="btn btn-danger" title="Esgotar vagas" aria-label="Esgotar vagas"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>` 
                             : `<button class="btn btn-outline" disabled style="opacity: 0.5;" aria-label="Curso esgotado"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>`
@@ -258,6 +259,33 @@
         } catch (err) {
             console.error(err);
             mostrarPopup("Erro de conexão.", 'error');
+        }
+    }
+
+    async function aumentarVagas(id, nome) {
+        // Criar modal customizado para entrada de quantidade
+        const quantidade = prompt(`Quantas vagas deseja adicionar ao curso "${nome}"?`, "1");
+        if (quantidade === null) return; // Cancelou
+
+        const qtd = Number(quantidade);
+        if (!Number.isInteger(qtd) || qtd <= 0) {
+            mostrarPopup("Digite um número inteiro positivo.", 'warning');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/cursos/${id}/vagas`, {
+                method: 'PUT',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ quantidade: qtd })
+            });
+
+            const data = await lerJsonOuLancar(res);
+            carregarCursosAdmin();
+            mostrarPopup(`${qtd} vaga(s) adicionada(s) com sucesso! Total agora: ${data.vagas_atuais}`, 'success');
+        } catch (err) {
+            console.error(err);
+            mostrarPopup("Erro ao aumentar vagas.", 'error');
         }
     }
 

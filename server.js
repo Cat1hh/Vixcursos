@@ -1408,6 +1408,46 @@ async function createApp() {
     });
 
     // ============================================================
+    // AUMENTAR VAGAS DO CURSO
+    // ============================================================
+    app.put("/cursos/:id/vagas", exigirAuthAdmin, async (req, res) => {
+        try {
+            const id = req.params.id;
+            const { quantidade } = req.body;
+
+            // Validar quantidade
+            const novasVagas = Number(quantidade);
+            if (!Number.isInteger(novasVagas) || novasVagas <= 0) {
+                return res.status(400).json({ error: "Quantidade deve ser um número inteiro positivo" });
+            }
+
+            // Buscar curso
+            const [curso] = await db.query(`SELECT id, vagas FROM cursos WHERE id = ?`, [id]);
+            if (!curso.length) {
+                return res.status(404).json({ error: "Curso não encontrado" });
+            }
+
+            // Atualizar vagas e reativar se estava esgotado
+            const vagasAtuais = Number(curso[0].vagas) || 0;
+            const vagasNovas = vagasAtuais + novasVagas;
+            
+            await db.query(
+                `UPDATE cursos SET vagas = ?, status = 'ativo' WHERE id = ?`,
+                [vagasNovas, id]
+            );
+
+            res.json({ 
+                status: "vagas aumentadas com sucesso",
+                vagas_anteriores: vagasAtuais,
+                vagas_adicionadas: novasVagas,
+                vagas_atuais: vagasNovas
+            });
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro ao aumentar vagas");
+        }
+    });
+
+    // ============================================================
     // DELETAR CURSO (REMOVE INSCRIÇÕES TAMBÉM)
     // ============================================================
     app.delete("/cursos/:id", exigirAuthAdmin, async (req, res) => {
