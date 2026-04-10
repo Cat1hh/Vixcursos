@@ -190,6 +190,7 @@
                             ? `<button onclick="esgotarCurso(${c.id}, '${c.nome}')" class="btn btn-danger" title="Esgotar vagas" aria-label="Esgotar vagas"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>` 
                             : `<button class="btn btn-outline" disabled style="opacity: 0.5;" aria-label="Curso esgotado"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>`
                         }
+                        <button onclick="deletarCurso(${c.id}, '${c.nome}')" class="btn btn-danger" title="Excluir curso" aria-label="Excluir curso"><i class="bi bi-trash" aria-hidden="true"></i></button>
                     </td>
                 </tr>`;
             });
@@ -257,6 +258,27 @@
         } catch (err) {
             console.error(err);
             mostrarPopup("Erro de conexão.", 'error');
+        }
+    }
+
+    async function deletarCurso(id, nome) {
+        const confirmou = await confirmarPopup({
+            titulo: 'Excluir curso',
+            mensagem: `Tem certeza que deseja excluir permanentemente o curso "${nome}"? Todas as inscrições serão removidas.`,
+            textoConfirmar: 'Sim, excluir',
+            textoCancelar: 'Cancelar',
+            tipo: 'danger'
+        });
+        if (!confirmou) return;
+
+        try {
+            const res = await fetch(`/cursos/${id}`, { method: 'DELETE' });
+            await lerJsonOuLancar(res);
+            carregarCursosAdmin();
+            mostrarPopup('Curso excluído com sucesso.', 'success');
+        } catch (err) {
+            console.error(err);
+            mostrarPopup("Erro ao excluir o curso.", 'error');
         }
     }
 

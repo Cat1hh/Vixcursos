@@ -1406,6 +1406,28 @@ async function createApp() {
             return responderErroBanco(res, err, "Erro ao atualizar status");
         }
     });
+
+    // ============================================================
+    // DELETAR CURSO (REMOVE INSCRIÇÕES TAMBÉM)
+    // ============================================================
+    app.delete("/cursos/:id", exigirAuthAdmin, async (req, res) => {
+        try {
+            const id = req.params.id;
+
+            // Verifica se o curso existe
+            const [curso] = await db.query(`SELECT id FROM cursos WHERE id = ?`, [id]);
+            if (!curso.length) {
+                return res.status(404).json({ error: "Curso não encontrado" });
+            }
+
+            // Deleta o curso (ON DELETE CASCADE remove as inscrições automaticamente)
+            await db.query(`DELETE FROM cursos WHERE id = ?`, [id]);
+
+            res.json({ status: "curso deletado com sucesso" });
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro ao deletar o curso");
+        }
+    });
     
     // ============================================================
     // INSCRIÇÃO
