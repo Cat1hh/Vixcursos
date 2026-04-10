@@ -2054,21 +2054,6 @@ async function createApp() {
     });
 
     // ============================================================
-    // DELETAR CURSO (CASCADE apaga inscrições automaticamente)
-    // ============================================================
-    app.delete("/cursos/:id", exigirAuthAdmin, async (req, res) => {
-        try {
-            const { id } = req.params;
-            const [[curso]] = await db.query(`SELECT id FROM cursos WHERE id = ?`, [id]);
-            if (!curso) return res.status(404).json({ error: "Curso não encontrado" });
-            await db.query(`DELETE FROM cursos WHERE id = ?`, [id]);
-            res.json({ message: "Curso removido com sucesso." });
-        } catch (err) {
-            return responderErroBanco(res, err, "Erro ao remover curso");
-        }
-    });
-
-    // ============================================================
     // CHATBOT
     // ============================================================
     app.post("/chat", async (req, res) => {
