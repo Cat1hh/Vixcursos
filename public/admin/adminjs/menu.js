@@ -263,11 +263,27 @@
     }
 
     async function aumentarVagas(id, nome) {
-        // Criar modal customizado para entrada de quantidade
-        const quantidade = prompt(`Quantas vagas deseja adicionar ao curso "${nome}"?`, "1");
-        if (quantidade === null) return; // Cancelou
+        // Abre modal customizado em vez de usar prompt()
+        document.getElementById('nomeCursoModal').textContent = `Curso: ${nome}`;
+        document.getElementById('inputVagas').value = '1';
+        document.getElementById('inputVagas').focus();
+        document.getElementById('modalAumentarVagas').style.display = 'flex';
+        
+        // Armazena o ID do curso para usar depois
+        window.cursoIdAumentarVagas = id;
+    }
 
-        const qtd = Number(quantidade);
+    function fecharModalVagas() {
+        document.getElementById('modalAumentarVagas').style.display = 'none';
+        window.cursoIdAumentarVagas = null;
+    }
+
+    async function confirmarAumentarVagas(event) {
+        event.preventDefault();
+        
+        const qtd = Number(document.getElementById('inputVagas').value);
+        const id = window.cursoIdAumentarVagas;
+
         if (!Number.isInteger(qtd) || qtd <= 0) {
             mostrarPopup("Digite um número inteiro positivo.", 'warning');
             return;
@@ -281,6 +297,7 @@
             });
 
             const data = await lerJsonOuLancar(res);
+            fecharModalVagas();
             carregarCursosAdmin();
             mostrarPopup(`${qtd} vaga(s) adicionada(s) com sucesso! Total agora: ${data.vagas_atuais}`, 'success');
         } catch (err) {

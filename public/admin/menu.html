@@ -145,6 +145,25 @@
     </div>
 </div>
 
+<!-- Modal para Aumentar Vagas -->
+<div id="modalAumentarVagas" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <button class="fechar-modal" onclick="fecharModalVagas()">&times;</button>
+        <p class="modal-title">Aumentar Vagas</p>
+        <p class="modal-desc" id="nomeCursoModal">--</p>
+        <form id="formAumentarVagas" onsubmit="confirmarAumentarVagas(event)">
+            <div class="form-group">
+                <label>Quantas vagas deseja adicionar?</label>
+                <input type="number" id="inputVagas" min="1" placeholder="Ex: 5" required autofocus>
+            </div>
+            <div class="form-footer">
+                <button type="button" class="btn btn-outline" onclick="fecharModalVagas()">Cancelar</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle" aria-hidden="true"></i> Adicionar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="adminjs/menu.js"></script>
 
 </body>
