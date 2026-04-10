@@ -48,8 +48,6 @@
         if (!menuToggle || !menuLinks) return;
 
         let menuOpen = false;
-        let lastScrollY = window.scrollY;
-        let scrollTicking = false;
 
         function setMenuOpen(value) {
             menuOpen = Boolean(value);
@@ -83,27 +81,6 @@
                 setMenuOpen(false);
             }
         });
-
-        function atualizarNavbarNoScroll() {
-            const currentY = window.scrollY;
-            const scrollingDown = currentY > lastScrollY;
-            const passouLimite = currentY > 120;
-
-            if (passouLimite && scrollingDown) {
-                navbar.classList.add("nav-hidden");
-            } else {
-                navbar.classList.remove("nav-hidden");
-            }
-
-            lastScrollY = currentY;
-            scrollTicking = false;
-        }
-
-        window.addEventListener("scroll", () => {
-            if (scrollTicking) return;
-            scrollTicking = true;
-            window.requestAnimationFrame(atualizarNavbarNoScroll);
-        }, { passive: true });
     }
 
     async function injectComponent(target, fileName) {

@@ -1085,6 +1085,30 @@ body.index-page .light-hero {
     z-index: 2;
 }
 
+/* Garante prioridade de clique na barra de navegacao. */
+body.index-page [data-site-header] {
+    z-index: 2000;
+}
+
+body.index-page .light-navbar {
+    z-index: 2100;
+    pointer-events: auto;
+}
+
+body.index-page .light-navbar a,
+body.index-page .light-navbar button,
+body.index-page .light-navbar .ln-links {
+    pointer-events: auto;
+}
+
+/* Elementos decorativos nunca devem interceptar clique. */
+body.index-page .light-hero-wrapper::before,
+body.index-page .light-hero-wrapper::after,
+body.index-page .hero-background-carousel,
+body.index-page .hero-background-carousel * {
+    pointer-events: none !important;
+}
+
 .section-header {
     margin-bottom: 28px;
 }
