@@ -263,28 +263,20 @@ async function createApp() {
     const db = {
         query: async (sql, values) => {
             const text = typeof sql === "string" ? converterPlaceholdersSql(sql) : sql;
-        let interessadosTemEnviadoEm = null;
+        let interessadosSchemaSincronizado = false;
 
-        async function verificarColunaInteressadosEnviadoEm() {
-            if (interessadosTemEnviadoEm !== null) {
-                return interessadosTemEnviadoEm;
+        async function garantirSchemaInteressados() {
+            if (interessadosSchemaSincronizado) {
+                return;
             }
 
             try {
-                const [rows] = await db.query(
-                    `SELECT 1
-                     FROM information_schema.columns
-                     WHERE table_name = 'interessados'
-                       AND column_name = 'enviado_em'
-                     LIMIT 1`
-                );
-                interessadosTemEnviadoEm = rows.length > 0;
+                await db.query(`ALTER TABLE interessados ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'aguardando'`);
+                await db.query(`ALTER TABLE interessados ADD COLUMN IF NOT EXISTS enviado_em TIMESTAMP NULL`);
+                interessadosSchemaSincronizado = true;
             } catch (erro) {
-                console.warn("[interessados] Nao foi possivel verificar a coluna enviado_em.", erro?.message || erro);
-                interessadosTemEnviadoEm = false;
+                console.warn("[interessados] Nao foi possivel sincronizar schema.", erro?.message || erro);
             }
-
-            return interessadosTemEnviadoEm;
         }
             try {
                 const result = await pgPool.query(text, values);
@@ -750,11 +742,8 @@ async function createApp() {
         }
 
         if (emailResult.status === 'fulfilled' || (smsResult.status === 'fulfilled' && smsResult.value.sent)) {
-            if (await verificarColunaInteressadosEnviadoEm()) {
-                await db.query(`UPDATE interessados SET status = 'enviado', enviado_em = NOW() WHERE id = ?`, [interessado.id]);
-            } else {
-                await db.query(`UPDATE interessados SET status = 'enviado' WHERE id = ?`, [interessado.id]);
-            }
+            await garantirSchemaInteressados();
+            await db.query(`UPDATE interessados SET status = 'enviado', enviado_em = NOW() WHERE id = ?`, [interessado.id]);
             return true;
         }
 
@@ -1933,9 +1922,7 @@ async function createApp() {
     // Listar todos os interessados no Admin
     app.get('/api/interessados', exigirAuthAdmin, async (req, res) => {
         try {
-            const temEnviadoEm = await verificarColunaInteressadosEnviadoEm();
-            const extraEnviadoEm = temEnviadoEm ? `,
-                    enviado_em` : '';
+            await garantirSchemaInteressados();
             const [rows] = await db.query(`
                 SELECT
                     id,
@@ -1944,7 +1931,8 @@ async function createApp() {
                     COALESCE(email, '') AS email,
                     COALESCE(regiao, '') AS regiao,
                     COALESCE(perfil_curso, '') AS perfil_curso,
-                    COALESCE(status, 'aguardando') AS status${extraEnviadoEm}
+                    COALESCE(status, 'aguardando') AS status,
+                    enviado_em
                 FROM interessados
                 ORDER BY id DESC
             `);
@@ -1956,22 +1944,14 @@ async function createApp() {
 
     app.put('/api/interessados/:id/status', exigirAuthAdmin, async (req, res) => {
         try {
+            await garantirSchemaInteressados();
             const { status } = req.body;
-            if (await verificarColunaInteressadosEnviadoEm()) {
-                await db.query(
-                    `UPDATE interessados
-                     SET status = ?, enviado_em = CASE WHEN ? = 'enviado' THEN NOW() ELSE NULL END
-                     WHERE id = ?`,
-                    [status, status, req.params.id]
-                );
-            } else {
-                await db.query(
-                    `UPDATE interessados
-                     SET status = ?
-                     WHERE id = ?`,
-                    [status, req.params.id]
-                );
-            }
+            await db.query(
+                `UPDATE interessados
+                 SET status = ?, enviado_em = CASE WHEN ? = 'enviado' THEN NOW() ELSE NULL END
+                 WHERE id = ?`,
+                [status, status, req.params.id]
+            );
             res.json({ message: "Status atualizado!" });
         } catch (err) {
             return responderErroBanco(res, err, "Erro ao atualizar status");
