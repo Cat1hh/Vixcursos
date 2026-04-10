@@ -5,7 +5,15 @@
 
     if (!headerSlot && !footerSlot) return;
 
-    const layoutBase = root.dataset.layoutBase || "public";
+    function obterLayoutBase() {
+        const dataBase = root.dataset.layoutBase;
+        if (dataBase) return dataBase;
+
+        // Fallback seguro para páginas sem data-layout-base.
+        return window.location.pathname.includes("/pages/") ? ".." : ".";
+    }
+
+    const layoutBase = obterLayoutBase();
     const replacements = {
         HOME_URL: root.dataset.homeUrl || "index.html",
         COURSES_URL: root.dataset.coursesUrl || "#cursos",
@@ -100,28 +108,45 @@
 
     async function injectComponent(target, fileName) {
         if (!target) return;
-        const response = await fetch(`${layoutBase}/components/${fileName}`);
-        if (!response.ok) {
-            throw new Error(`Falha ao carregar componente: ${fileName}`);
+        const tentativas = [
+            `${layoutBase}/components/${fileName}`,
+            `../components/${fileName}`,
+            `/components/${fileName}`
+        ];
+
+        for (const rota of tentativas) {
+            try {
+                const response = await fetch(rota, { cache: "no-store" });
+                if (!response.ok) continue;
+
+                const html = await response.text();
+                target.innerHTML = applyTemplate(html);
+                return;
+            } catch {
+                // Tenta a próxima rota.
+            }
         }
 
-        const html = await response.text();
-        target.innerHTML = applyTemplate(html);
+        throw new Error(`Falha ao carregar componente: ${fileName}`);
     }
 
     async function initLayout() {
-        try {
-            await Promise.all([
-                injectComponent(headerSlot, "header.html"),
-                injectComponent(footerSlot, "footer.html")
-            ]);
+        const [headerResult, footerResult] = await Promise.allSettled([
+            injectComponent(headerSlot, "header.html"),
+            injectComponent(footerSlot, "footer.html")
+        ]);
 
-            markCurrentNav();
-            initNavbarInteractions();
-            document.dispatchEvent(new CustomEvent("layout:ready"));
-        } catch (error) {
-            console.warn("Nao foi possivel carregar o layout compartilhado.", error);
+        if (headerResult.status === "rejected") {
+            console.warn("Nao foi possivel carregar o header compartilhado.", headerResult.reason);
         }
+
+        if (footerResult.status === "rejected") {
+            console.warn("Nao foi possivel carregar o footer compartilhado.", footerResult.reason);
+        }
+
+        markCurrentNav();
+        initNavbarInteractions();
+        document.dispatchEvent(new CustomEvent("layout:ready"));
     }
 
     initLayout();

@@ -2,6 +2,7 @@
    1. INICIALIZAÇÃO E SPLASH SCREEN
 ========================================================= */
 const SPLASH_SEEN_KEY = 'vixcursos_index_splash_seen';
+const PORTAL_INIT_KEY = '__vixcursos_portal_initialized';
 
 function splashJaFoiVista() {
     try {
@@ -55,6 +56,12 @@ let timerRotacaoDestaque = null;
 let timerAtualizacaoDestaque = null;
 
 async function inicializarPortal() {
+    if (window[PORTAL_INIT_KEY]) {
+        return;
+    }
+
+    window[PORTAL_INIT_KEY] = true;
+
     try {
         const containerCursos = document.getElementById("containerCursos");
         const temFiltros = document.getElementById("filtro-idade");
@@ -348,9 +355,13 @@ async function carregarCursos() {
         if (!res.ok) return [];
         
         const cursos = await res.json();
-        exibirCursos(cursos);
-        atualizarCursosDestaque(cursos, true);
-        return cursos;
+        const cursosUnicos = Array.isArray(cursos)
+            ? Array.from(new Map(cursos.map((curso) => [curso.id, curso])).values())
+            : [];
+
+        exibirCursos(cursosUnicos);
+        atualizarCursosDestaque(cursosUnicos, true);
+        return cursosUnicos;
     } catch (err) {
         console.error("Erro ao carregar cursos.");
         return [];
