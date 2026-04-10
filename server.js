@@ -263,20 +263,34 @@ async function createApp() {
     const db = {
         query: async (sql, values) => {
             const text = typeof sql === "string" ? converterPlaceholdersSql(sql) : sql;
-        let interessadosSchemaSincronizado = false;
+        let camposInteressadosCache = null;
 
-        async function garantirSchemaInteressados() {
-            if (interessadosSchemaSincronizado) {
-                return;
+        async function obterCamposInteressados() {
+            if (camposInteressadosCache) {
+                return camposInteressadosCache;
             }
 
             try {
-                await db.query(`ALTER TABLE interessados ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'aguardando'`);
-                await db.query(`ALTER TABLE interessados ADD COLUMN IF NOT EXISTS enviado_em TIMESTAMP NULL`);
-                interessadosSchemaSincronizado = true;
+                const [rows] = await db.query(
+                    `SELECT column_name
+                     FROM information_schema.columns
+                     WHERE table_name = 'interessados'`
+                );
+
+                const nomes = new Set(rows.map((row) => String(row.column_name || '').toLowerCase()));
+                camposInteressadosCache = {
+                    status: nomes.has('status'),
+                    enviadoEm: nomes.has('enviado_em')
+                };
             } catch (erro) {
-                console.warn("[interessados] Nao foi possivel sincronizar schema.", erro?.message || erro);
+                console.warn("[interessados] Nao foi possivel ler metadados da tabela.", erro?.message || erro);
+                camposInteressadosCache = {
+                    status: false,
+                    enviadoEm: false
+                };
             }
+
+            return camposInteressadosCache;
         }
             try {
                 const result = await pgPool.query(text, values);
@@ -742,8 +756,12 @@ async function createApp() {
         }
 
         if (emailResult.status === 'fulfilled' || (smsResult.status === 'fulfilled' && smsResult.value.sent)) {
-            await garantirSchemaInteressados();
-            await db.query(`UPDATE interessados SET status = 'enviado', enviado_em = NOW() WHERE id = ?`, [interessado.id]);
+            const campos = await obterCamposInteressados();
+            if (campos.status && campos.enviadoEm) {
+                await db.query(`UPDATE interessados SET status = 'enviado', enviado_em = NOW() WHERE id = ?`, [interessado.id]);
+            } else if (campos.status) {
+                await db.query(`UPDATE interessados SET status = 'enviado' WHERE id = ?`, [interessado.id]);
+            }
             return true;
         }
 
@@ -1922,7 +1940,9 @@ async function createApp() {
     // Listar todos os interessados no Admin
     app.get('/api/interessados', exigirAuthAdmin, async (req, res) => {
         try {
-            await garantirSchemaInteressados();
+            const campos = await obterCamposInteressados();
+            const selectStatus = campos.status ? `COALESCE(status, 'aguardando') AS status` : `'aguardando' AS status`;
+            const selectEnviadoEm = campos.enviadoEm ? `enviado_em` : `NULL AS enviado_em`;
             const [rows] = await db.query(`
                 SELECT
                     id,
@@ -1931,8 +1951,8 @@ async function createApp() {
                     COALESCE(email, '') AS email,
                     COALESCE(regiao, '') AS regiao,
                     COALESCE(perfil_curso, '') AS perfil_curso,
-                    COALESCE(status, 'aguardando') AS status,
-                    enviado_em
+                    ${selectStatus},
+                    ${selectEnviadoEm}
                 FROM interessados
                 ORDER BY id DESC
             `);
@@ -1944,14 +1964,23 @@ async function createApp() {
 
     app.put('/api/interessados/:id/status', exigirAuthAdmin, async (req, res) => {
         try {
-            await garantirSchemaInteressados();
             const { status } = req.body;
-            await db.query(
-                `UPDATE interessados
-                 SET status = ?, enviado_em = CASE WHEN ? = 'enviado' THEN NOW() ELSE NULL END
-                 WHERE id = ?`,
-                [status, status, req.params.id]
-            );
+            const campos = await obterCamposInteressados();
+            if (campos.status && campos.enviadoEm) {
+                await db.query(
+                    `UPDATE interessados
+                     SET status = ?, enviado_em = CASE WHEN ? = 'enviado' THEN NOW() ELSE NULL END
+                     WHERE id = ?`,
+                    [status, status, req.params.id]
+                );
+            } else if (campos.status) {
+                await db.query(
+                    `UPDATE interessados
+                     SET status = ?
+                     WHERE id = ?`,
+                    [status, req.params.id]
+                );
+            }
             res.json({ message: "Status atualizado!" });
         } catch (err) {
             return responderErroBanco(res, err, "Erro ao atualizar status");
