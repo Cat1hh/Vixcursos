@@ -1958,7 +1958,12 @@ async function createApp() {
             `);
             res.json(rows);
         } catch (err) {
-            return responderErroBanco(res, err, "Erro ao carregar fila de interessados");
+            console.error("[interessados] erro detalhado:", err?.code || "sem_code", err?.message || err);
+            return res.status(500).json({
+                error: "Erro ao carregar fila de interessados",
+                detalhes: err?.message || "sem_detalhes",
+                code: err?.code || "sem_code"
+            });
         }
     });
 
