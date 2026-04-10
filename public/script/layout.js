@@ -31,6 +31,73 @@
         });
     }
 
+    function initNavbarInteractions() {
+        const navbar = document.querySelector(".light-navbar");
+        if (!navbar) return;
+
+        const menuToggle = navbar.querySelector(".ln-menu-toggle");
+        const menuLinks = navbar.querySelector(".ln-links");
+        if (!menuToggle || !menuLinks) return;
+
+        let menuOpen = false;
+        let lastScrollY = window.scrollY;
+        let scrollTicking = false;
+
+        function setMenuOpen(value) {
+            menuOpen = Boolean(value);
+            navbar.classList.toggle("nav-menu-open", menuOpen);
+            menuToggle.setAttribute("aria-expanded", menuOpen ? "true" : "false");
+        }
+
+        menuToggle.addEventListener("click", () => {
+            setMenuOpen(!menuOpen);
+        });
+
+        menuLinks.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", () => setMenuOpen(false));
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!menuOpen) return;
+            if (!navbar.contains(event.target)) {
+                setMenuOpen(false);
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                setMenuOpen(false);
+            }
+        });
+
+        window.addEventListener("resize", () => {
+            if (window.innerWidth > 900 && menuOpen) {
+                setMenuOpen(false);
+            }
+        });
+
+        function atualizarNavbarNoScroll() {
+            const currentY = window.scrollY;
+            const scrollingDown = currentY > lastScrollY;
+            const passouLimite = currentY > 120;
+
+            if (passouLimite && scrollingDown) {
+                navbar.classList.add("nav-hidden");
+            } else {
+                navbar.classList.remove("nav-hidden");
+            }
+
+            lastScrollY = currentY;
+            scrollTicking = false;
+        }
+
+        window.addEventListener("scroll", () => {
+            if (scrollTicking) return;
+            scrollTicking = true;
+            window.requestAnimationFrame(atualizarNavbarNoScroll);
+        }, { passive: true });
+    }
+
     async function injectComponent(target, fileName) {
         if (!target) return;
         const response = await fetch(`${layoutBase}/components/${fileName}`);
@@ -50,6 +117,7 @@
             ]);
 
             markCurrentNav();
+            initNavbarInteractions();
             document.dispatchEvent(new CustomEvent("layout:ready"));
         } catch (error) {
             console.warn("Nao foi possivel carregar o layout compartilhado.", error);

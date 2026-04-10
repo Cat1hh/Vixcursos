@@ -135,8 +135,12 @@ function ativarBotoesCategoria() {
 
     pills.forEach(pill => {
         pill.addEventListener('click', () => {
-            pills.forEach(p => p.classList.remove('active'));
+            pills.forEach(p => {
+                p.classList.remove('active');
+                p.setAttribute('aria-selected', 'false');
+            });
             pill.classList.add('active');
+            pill.setAttribute('aria-selected', 'true');
 
             if (selectCategoria) selectCategoria.value = ""; 
             aplicarFiltros();
@@ -145,7 +149,10 @@ function ativarBotoesCategoria() {
 
     if (selectCategoria) {
         selectCategoria.addEventListener('change', () => {
-            pills.forEach(p => p.classList.remove('active')); 
+            pills.forEach(p => {
+                p.classList.remove('active');
+                p.setAttribute('aria-selected', 'false');
+            });
             aplicarFiltros();
         });
     }
@@ -238,7 +245,10 @@ function limparFiltros() {
     if(document.getElementById("filtro-local")) document.getElementById("filtro-local").value = "";
     
     const pills = document.querySelectorAll('.category-pills .pill');
-    pills.forEach(p => p.classList.remove('active'));
+    pills.forEach(p => {
+        p.classList.remove('active');
+        p.setAttribute('aria-selected', 'false');
+    });
 
     aplicarFiltros();
 }
@@ -443,6 +453,7 @@ function exibirCursos(cursosFiltrados) {
 
     if (!Array.isArray(cursosFiltrados) || cursosFiltrados.length === 0) {
         gerenciarMensagemVazia(false);
+        atualizarResumoDescoberta(0, {});
         return;
     }
 
@@ -521,6 +532,8 @@ function exibirCursos(cursosFiltrados) {
 
         container.insertAdjacentHTML('beforeend', cardHTML);
     });
+
+    atualizarResumoDescoberta(cursosFiltrados.length, {});
 }
 
 function irParaDetalhes(id) {
@@ -530,32 +543,38 @@ function irParaDetalhes(id) {
 }
 
 async function carregarFiltros() {
+    const carregarLista = async (rota) => {
+        const response = await fetch(rota);
+        if (!response.ok) return [];
+        return response.json();
+    };
+
     try {
-        let r1 = await fetch("/public/idade");
-        let idades = await r1.json();
+        const [idades, categorias, locais] = await Promise.all([
+            carregarLista("/public/idade"),
+            carregarLista("/public/categoria"),
+            carregarLista("/public/local")
+        ]);
+
         let selIdade = document.querySelector("#filtro-idade");
         if(selIdade) {
             selIdade.innerHTML = '<option value="">Todas</option>';
-            idades.forEach(i => selIdade.innerHTML += `<option>${i.idade}</option>`);
+            idades.forEach(i => selIdade.innerHTML += `<option value="${i.idade}">${i.idade}</option>`);
         }
 
-        let r2 = await fetch("/public/categoria");
-        let categorias = await r2.json();
         let selCategoria = document.querySelector("#filtro-categoria");
         if(selCategoria) {
             selCategoria.innerHTML = '<option value="">Todas</option>';
-            categorias.forEach(c => selCategoria.innerHTML += `<option>${c.categoria}</option>`);
+            categorias.forEach(c => selCategoria.innerHTML += `<option value="${c.categoria}">${c.categoria}</option>`);
         }
 
-        let r4 = await fetch("/public/local");
-        let locais = await r4.json();
         let selLocal = document.querySelector("#filtro-local");
         if(selLocal) {
             selLocal.innerHTML = '<option value="">Todos</option>';
-            locais.forEach(l => selLocal.innerHTML += `<option>${l.local}</option>`);
+            locais.forEach(l => selLocal.innerHTML += `<option value="${l.local}">${l.local}</option>`);
         }
     } catch (err) {
-        console.error("Erro ao carregar opções de filtro.");
+        console.error("Erro ao carregar opcoes de filtro.", err);
     }
 }
 
