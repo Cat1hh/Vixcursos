@@ -263,35 +263,6 @@ async function createApp() {
     const db = {
         query: async (sql, values) => {
             const text = typeof sql === "string" ? converterPlaceholdersSql(sql) : sql;
-        let camposInteressadosCache = null;
-
-        async function obterCamposInteressados() {
-            if (camposInteressadosCache) {
-                return camposInteressadosCache;
-            }
-
-            try {
-                const [rows] = await db.query(
-                    `SELECT column_name
-                     FROM information_schema.columns
-                     WHERE table_name = 'interessados'`
-                );
-
-                const nomes = new Set(rows.map((row) => String(row.column_name || '').toLowerCase()));
-                camposInteressadosCache = {
-                    status: nomes.has('status'),
-                    enviadoEm: nomes.has('enviado_em')
-                };
-            } catch (erro) {
-                console.warn("[interessados] Nao foi possivel ler metadados da tabela.", erro?.message || erro);
-                camposInteressadosCache = {
-                    status: false,
-                    enviadoEm: false
-                };
-            }
-
-            return camposInteressadosCache;
-        }
             try {
                 const result = await pgPool.query(text, values);
                 return [result.rows, result.fields];
@@ -312,6 +283,36 @@ async function createApp() {
             };
         }
     };
+
+    let camposInteressadosCache = null;
+
+    async function obterCamposInteressados() {
+        if (camposInteressadosCache) {
+            return camposInteressadosCache;
+        }
+
+        try {
+            const [rows] = await db.query(
+                `SELECT column_name
+                 FROM information_schema.columns
+                 WHERE table_name = 'interessados'`
+            );
+
+            const nomes = new Set(rows.map((row) => String(row.column_name || '').toLowerCase()));
+            camposInteressadosCache = {
+                status: nomes.has('status'),
+                enviadoEm: nomes.has('enviado_em')
+            };
+        } catch (erro) {
+            console.warn("[interessados] Nao foi possivel ler metadados da tabela.", erro?.message || erro);
+            camposInteressadosCache = {
+                status: false,
+                enviadoEm: false
+            };
+        }
+
+        return camposInteressadosCache;
+    }
 
     let bancoDisponivelNaInicializacao = false;
 
