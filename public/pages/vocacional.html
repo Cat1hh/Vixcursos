@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR"
+      data-layout-base="../"
+    data-home-url="index.html"
+    data-courses-url="index.html#cursos"
+      data-vocational-url="vocacional.html"
+      data-about-url="informacoes.html"
+    data-contact-url="index.html#rodape"
+      data-logo-src="../imagem/VIxcursos.png"
+      data-gov-logo-src="../imagem/prefeitura.png"
+      data-admin-url="../admin/menu.html"
+      data-current-page="vocational">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Vocacional - VIX Cursos</title>
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="apple-touch-icon" href="../imagem/VIxcursos.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/vocacional.css">
+</head>
+<body class="vocacional-page">
+    <div class="vocacional-bg"></div>
+
+    <div data-site-header></div>
+
+    <main class="vocacional-main">
+        <section class="vocacional-hero">
+            <div class="vocacional-badge">Descubra sua trilha profissional</div>
+            <h1>Quiz vocacional para encontrar o curso com a sua cara</h1>
+            <p>
+                Responda algumas perguntas e receba uma recomendacao alinhada ao seu perfil.
+                Depois, voce ainda pode pedir aviso quando surgirem vagas na sua regiao.
+            </p>
+            <div class="vocacional-actions">
+                <button class="btn btn-primary vocacional-start" id="btnAbrirQuiz">Comecar quiz</button>
+            </div>
+        </section>
+
+        <section class="vocacional-info">
+            <article class="vocacional-card">
+                <strong>Como funciona</strong>
+                <p>O quiz analisa afinidade com areas como tecnologia, gastronomia, manutencao e cuidados pessoais.</p>
+            </article>
+            <article class="vocacional-card">
+                <strong>Tempo medio</strong>
+                <p>Leva menos de 2 minutos para concluir e voce ja sai com um direcionamento inicial.</p>
+            </article>
+            <article class="vocacional-card">
+                <strong>Proximo passo</strong>
+                <p>Depois do resultado, deixe seus dados para receber novidades quando abrirem novas turmas.</p>
+            </article>
+        </section>
+    </main>
+
+    <div data-site-footer></div>
+
+    <div id="quizModal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="fecharQuiz" class="close-modal" aria-label="Fechar quiz">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div class="quiz-header">
+                <h2>Descubra seu perfil</h2>
+                <p>Responda rapido e veja qual area combina mais com seus interesses.</p>
+            </div>
+            <div id="quizBody"></div>
+
+            <div id="quizResultado" style="display: none;">
+                <h3 id="resultadoTitulo">Seu perfil e...</h3>
+                <p id="resultadoTexto">Descricao...</p>
+                <div class="lead-form">
+                    <h4>Quer ser avisado sobre vagas na sua regiao?</h4>
+                    <input type="text" id="leadNome" placeholder="Seu nome completo" required>
+                    <input type="tel" id="leadWhatsapp" placeholder="Seu WhatsApp" required>
+                    <input type="email" id="leadEmail" placeholder="Seu e-mail" required>
+                    <select id="leadRegiao" required>
+                        <option value="">Selecione sua regiao...</option>
+                        <option value="centro">Centro</option>
+                        <option value="maruipe">Maruipe</option>
+                        <option value="sao_pedro">Sao Pedro</option>
+                        <option value="jardim_camburi">Jardim Camburi</option>
+                    </select>
+                    <button id="btnSalvarLead" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Me avise</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../script/layout.js"></script>
+    <script src="../script/script.js"></script>
+</body>
+</html>

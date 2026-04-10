@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css_adm/admin.css">
-    <script src="../script/admin-auth-gate.js"></script>
     <style>
         /* Classes usadas pelo interessados.js na renderização dinâmica */
         .status { padding: 5px 12px; border-radius: 50px; font-size: .75rem; font-weight: 700; border: none; cursor: pointer; transition: .15s; }
@@ -21,14 +20,15 @@
         .btn-toggle.ativo { background: var(--primary); color: white; border-color: var(--primary); }
     </style>
 </head>
-<body data-auto-refresh="true" data-auto-refresh-seconds="120">
+<body>
 
 <nav class="admin-sidebar">
     <a href="menu.html" class="sidebar-brand">
-        <span class="brand-logo-wrap">
-            <img src="../imagem/VIxcursos.png" alt="Logo Vix Cursos" class="brand-logo">
-        </span>
-        <span class="brand-sub">Administrativo</span>
+        <span class="brand-icon"><i class="bi bi-mortarboard-fill" aria-hidden="true"></i></span>
+        <div>
+            <span class="brand-name">Vix Cursos</span>
+            <span class="brand-sub">Área administrativa</span>
+        </div>
     </a>
     <div class="sidebar-nav">
         <div class="nav-section">Principal</div>
@@ -90,7 +90,6 @@
     </div>
 </div>
 
-<script src="../script/auto-refresh.js"></script>
 <script src="adminjs/interessados.js"></script>
 
 </body>

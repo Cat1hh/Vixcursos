@@ -166,6 +166,7 @@ function aplicarFiltros() {
 
     const cards = document.querySelectorAll(".curso-card-novo");
     let encontrouAlgum = false;
+    let totalVisiveis = 0;
 
     cards.forEach(card => {
         const min = parseInt(card.dataset.idadeMin) || 0;
@@ -216,12 +217,19 @@ function aplicarFiltros() {
         if (bateIdade && bateCategoria && bateLocal) {
             card.style.display = "flex";
             encontrouAlgum = true;
+            totalVisiveis += 1;
         } else {
             card.style.display = "none";
         }
     });
 
     gerenciarMensagemVazia(encontrouAlgum);
+    atualizarResumoDescoberta(totalVisiveis, {
+        idade: idadeSel,
+        local: localSel,
+        categoria: categoriaSel,
+        pill: textoPill
+    });
 }
 
 function limparFiltros() {
@@ -250,6 +258,33 @@ function gerenciarMensagemVazia(temCursos) {
     } else if (msg) {
         msg.remove();
     }
+}
+
+function atualizarResumoDescoberta(totalVisiveis, filtros = {}) {
+    const countEl = document.getElementById("discoveryCount");
+    const activeEl = document.getElementById("activeFilters");
+    if (!countEl || !activeEl) return;
+
+    countEl.textContent = String(totalVisiveis || 0);
+
+    const chips = [];
+    if (filtros.idade && filtros.idade !== "Todas") chips.push(`Idade: ${filtros.idade}`);
+    if (filtros.local && filtros.local !== "Todos") chips.push(`Local: ${filtros.local}`);
+
+    const categoriaEfetiva =
+        filtros.categoria && filtros.categoria !== "Todas"
+            ? filtros.categoria
+            : (filtros.pill || "");
+    if (categoriaEfetiva && categoriaEfetiva !== "Geral") chips.push(`Categoria: ${categoriaEfetiva}`);
+
+    if (chips.length === 0) {
+        activeEl.innerHTML = '<span class="active-filter empty">Nenhum filtro aplicado</span>';
+        return;
+    }
+
+    activeEl.innerHTML = chips
+        .map(texto => `<span class="active-filter">${texto}</span>`)
+        .join("");
 }
 
 

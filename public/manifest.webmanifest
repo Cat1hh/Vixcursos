@@ -1,0 +1,25 @@
+{
+  "name": "VIX Cursos",
+  "short_name": "VIX Cursos",
+  "description": "Portal de cursos gratuitos da Prefeitura de Vitoria.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050c1d",
+  "theme_color": "#0f172a",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/imagem/VIxcursos.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/imagem/VIxcursos.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

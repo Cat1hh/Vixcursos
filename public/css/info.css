@@ -1,277 +1,464 @@
-/* =========================================================
-   ESTILOS ESPECÍFICOS DA PÁGINA DE INFORMAÇÕES (SOBRE)
-========================================================= */
-
-/* Grid de Diferenciais (Ícones verdes/azuis/amarelos) */
-.diferenciais-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #1E293B;
+body.about-page {
+    background:
+        radial-gradient(circle at top, rgba(56, 189, 248, 0.12) 0%, rgba(56, 189, 248, 0) 26%),
+        linear-gradient(180deg, #030817 0%, #050c1d 100%);
+    color: #f8fafc;
 }
 
-.dif-item {
-    display: flex;
+.about-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+        linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+        radial-gradient(circle at 12% 16%, rgba(255, 138, 90, 0.12) 0%, rgba(255, 138, 90, 0) 26%),
+        radial-gradient(circle at 82% 10%, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0) 24%);
+    background-size: 44px 44px, 44px 44px, auto, auto;
+    opacity: 0.92;
+    pointer-events: none;
+}
+
+.about-main {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 150px 0 80px;
+}
+
+.about-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    gap: 24px;
+    align-items: stretch;
+}
+
+.about-hero-copy,
+.about-highlight-card,
+.about-panel,
+.about-step-card,
+.about-showcase-card,
+.about-faq-panel {
+    border-radius: 30px;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(9, 15, 29, 0.86) 100%);
+    box-shadow: 0 28px 70px rgba(2, 8, 23, 0.24);
+}
+
+.about-hero-copy {
+    padding: 40px;
+}
+
+.about-badge,
+.about-section-kicker,
+.about-panel-kicker,
+.about-highlight-kicker {
+    display: inline-flex;
     align-items: center;
     gap: 10px;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 12px 20px;
-    border-radius: 8px;
-    border: 1px solid #1E293B;
-    color: #F8FAFC;
-    font-weight: 500;
+    width: fit-content;
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.74);
+    border: 1px solid rgba(125, 211, 252, 0.18);
+    color: #9bd9ff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
-/* ==========================================
-   BLOCOS EXTRAS DE INFORMACAO
-========================================== */
-.info-grid-cards {
+.about-badge::before,
+.about-section-kicker::before,
+.about-panel-kicker::before,
+.about-highlight-kicker::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #38bdf8 0%, #22c55e 100%);
+    box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.1);
+}
+
+.about-hero-copy h1 {
+    margin: 22px 0 18px;
+    max-width: 760px;
+    font-size: clamp(2.7rem, 5.6vw, 4.9rem);
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+    color: #f8fafc;
+}
+
+.about-hero-copy p {
+    max-width: 700px;
+    color: rgba(226, 232, 240, 0.8);
+    font-size: 1.06rem;
+    line-height: 1.8;
+}
+
+.about-actions {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+
+.about-primary,
+.about-secondary {
+    min-width: 220px;
+    height: 54px;
+    padding: 0 28px;
+    border-radius: 999px;
+}
+
+.about-primary {
+    box-shadow: 0 18px 38px rgba(243, 108, 111, 0.24);
+}
+
+.about-secondary {
+    background: rgba(15, 23, 42, 0.76);
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    text-decoration: none;
+}
+
+.about-secondary:hover {
+    background: rgba(30, 41, 59, 0.92);
+    color: #ffffff;
+}
+
+.about-highlight-card {
+    padding: 34px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.about-highlight-card h2 {
+    margin: 18px 0 18px;
+    color: #f8fafc;
+    font-size: clamp(1.7rem, 3vw, 2.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+}
+
+.about-highlight-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.about-highlight-list li {
+    padding-left: 18px;
+    position: relative;
+    color: rgba(226, 232, 240, 0.8);
+    line-height: 1.7;
+}
+
+.about-highlight-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 11px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff8a5a 0%, #f36c6f 100%);
+}
+
+.about-section {
+    margin-top: 28px;
+}
+
+.about-section-head {
+    margin-bottom: 22px;
+}
+
+.about-section-head h2 {
+    margin: 16px 0 10px;
+    color: #f8fafc;
+    font-size: clamp(1.9rem, 4vw, 3rem);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+}
+
+.about-section-head p {
+    max-width: 720px;
+    color: rgba(226, 232, 240, 0.74);
+    font-size: 1rem;
+    line-height: 1.75;
+}
+
+.about-section-head-left {
+    margin-bottom: 24px;
+}
+
+.about-steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 18px;
 }
 
-.info-card {
-    background: #0F172A;
-    border: 1px solid #1E293B;
-    border-radius: 14px;
-    padding: 18px;
+.about-step-card {
+    padding: 24px;
 }
 
-.info-card h4 {
-    margin: 0 0 8px 0;
-    color: #F8FAFC;
-    font-size: 1rem;
+.step-number {
+    display: inline-flex;
+    margin-bottom: 18px;
+    color: #ffb996;
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
 }
 
-.info-card p {
-    margin: 0;
-    color: #94A3B8;
-    line-height: 1.55;
+.about-step-card h3,
+.about-panel h3,
+.about-showcase-copy h3,
+.about-faq-item summary {
+    margin: 0 0 10px;
+    color: #f8fafc;
+    font-size: 1.15rem;
+    line-height: 1.35;
+}
+
+.about-step-card p,
+.about-showcase-copy p,
+.about-faq-answer {
+    color: rgba(226, 232, 240, 0.74);
+    line-height: 1.7;
     font-size: 0.95rem;
 }
 
-.info-lista {
-    margin: 0;
-    padding-left: 20px;
-    color: #CBD5E1;
-    line-height: 1.65;
-}
-
-.info-lista li {
-    margin-bottom: 10px;
-}
-
-.faq-mini p {
-    color: #CBD5E1;
-    line-height: 1.65;
-}
-
-.faq-mini p strong {
-    color: #F8FAFC;
-}
-
-/* ==========================================
-   CARRETAS (Unidades Móveis)
-========================================== */
-.carretas-grid {
+.about-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
 }
 
-.carreta-card {
-    background: #0F172A;
-    border: 1px solid #1E293B;
-    border-radius: 16px;
+.about-panel {
+    padding: 28px;
+}
+
+.about-list {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+}
+
+.about-list li {
+    position: relative;
+    padding-left: 18px;
+    color: rgba(226, 232, 240, 0.78);
+    line-height: 1.7;
+}
+
+.about-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 11px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #38bdf8;
+}
+
+.about-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.about-mini-card {
+    padding: 18px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.about-mini-card strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #f8fafc;
+    font-size: 0.98rem;
+}
+
+.about-mini-card p {
+    color: rgba(226, 232, 240, 0.72);
+    font-size: 0.92rem;
+    line-height: 1.65;
+}
+
+.about-showcase {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.about-showcase-card {
     overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.carreta-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.4);
-    border-color: #38bdf8;
-}
-
-.carreta-card img {
+.about-showcase-card img {
     width: 100%;
-    height: 220px;
+    height: 260px;
     object-fit: cover;
-    border-bottom: 1px solid #1E293B;
+    display: block;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
 }
 
-.carreta-info {
-    padding: 20px;
+.about-showcase-copy {
+    padding: 22px;
 }
 
-.carreta-info h4 {
-    margin: 0 0 8px 0;
-    color: #F8FAFC;
-    font-size: 1.1rem;
-}
-
-.carreta-info p {
-    margin: 0;
-    color: #94A3B8;
-    font-size: 0.9rem;
-}
-
-/* ==========================================
-   PARCEIROS (SENAI / SENAC)
-========================================== */
-.parceiros-grid {
+.about-partners {
     display: flex;
-    justify-content: center;
-    gap: 40px;
+    gap: 18px;
     flex-wrap: wrap;
 }
 
-.parceiro-card {
-    background: #FFFFFF; /* Fundo branco para destacar as logos institucionais */
-    border-radius: 16px;
-    padding: 30px;
-    width: 250px;
-    text-align: center;
+.about-partner-card {
+    width: min(280px, 100%);
+    padding: 26px;
+    border-radius: 24px;
+    background: #ffffff;
     text-decoration: none;
-    transition: transform 0.3s ease;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    text-align: center;
+    box-shadow: 0 22px 46px rgba(2, 8, 23, 0.16);
+    transition: transform 0.24s ease, box-shadow 0.24s ease;
 }
 
-.parceiro-card:hover {
-    transform: scale(1.05);
+.about-partner-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 28px 56px rgba(2, 8, 23, 0.2);
 }
 
-.parceiro-card img {
-    max-width: 100%;
-    height: 80px;
+.about-partner-card img {
+    width: 100%;
+    height: 82px;
     object-fit: contain;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
-.parceiro-card p {
-    margin: 0;
-    color: #1E293B;
+.about-partner-card span {
+    color: #0f172a;
+    font-size: 1.02rem;
     font-weight: 700;
+}
+
+.about-faq-panel {
+    padding: 30px;
+}
+
+.about-faq-list {
+    display: grid;
+    gap: 14px;
+}
+
+.about-faq-item {
+    border-radius: 22px;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    background: rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+
+.about-faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    position: relative;
+    padding: 20px 56px 20px 20px;
+}
+
+.about-faq-item summary::-webkit-details-marker {
+    display: none;
+}
+
+.about-faq-item summary::after {
+    content: "+";
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(56, 189, 248, 0.12);
+    color: #9bd9ff;
     font-size: 1.1rem;
+    font-weight: 700;
 }
 
-/* ==========================================
-   ANIMAÇÕES DE SCROLL
-========================================== */
-.scroll-hidden {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: all 0.8s ease-out;
+.about-faq-item[open] summary::after {
+    content: "-";
 }
 
-.scroll-show {
-    opacity: 1;
-    transform: translateY(0);
+.about-faq-answer {
+    padding: 0 20px 20px;
 }
 
-body.dark-theme .diferenciais-grid {
-    border-top-color: #233047;
-}
-
-body.dark-theme .dif-item {
-    background: rgba(15, 23, 42, 0.72);
-    border-color: #233047;
-    color: #e2e8f0;
-}
-
-body.dark-theme .carreta-card {
-    background: linear-gradient(180deg, #0f172a, #0b1426);
-    border-color: #233047;
-}
-
-body.dark-theme .carreta-card:hover {
-    border-color: #4f46e5;
-    box-shadow: 0 18px 34px rgba(3, 10, 24, 0.46);
-}
-
-body.dark-theme .carreta-card img {
-    border-bottom-color: #233047;
-}
-
-body.dark-theme .carreta-info h4 {
-    color: #f8fafc;
-}
-
-body.dark-theme .carreta-info p {
-    color: #9fb1c8;
-}
-
-body.dark-theme .info-card {
-    background: linear-gradient(180deg, #0f172a, #0b1426);
-    border-color: #233047;
-}
-
-body.dark-theme .info-card h4 {
-    color: #f8fafc;
-}
-
-body.dark-theme .info-card p,
-body.dark-theme .info-lista,
-body.dark-theme .faq-mini p {
-    color: #9fb1c8;
-}
-
-body.dark-theme .parceiro-card {
-    background: linear-gradient(180deg, #0f172a, #0b1426);
-    border: 1px solid #233047;
-    box-shadow: 0 20px 34px rgba(3, 10, 24, 0.45);
-}
-
-body.dark-theme .parceiro-card p {
-    color: #e2e8f0;
-}
-
-body.dark-theme .footer p {
-    color: #9fb1c8 !important;
-}
-
-@media (max-width: 900px) {
-    .diferenciais-grid {
-        gap: 12px;
+@media (max-width: 1100px) {
+    .about-hero,
+    .about-grid,
+    .about-showcase {
+        grid-template-columns: 1fr;
     }
 
-    .dif-item {
+    .about-steps {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .about-main {
+        width: min(100% - 20px, 100%);
+        padding-top: 120px;
+        padding-bottom: 48px;
+    }
+
+    .about-hero-copy,
+    .about-highlight-card,
+    .about-panel,
+    .about-step-card,
+    .about-faq-panel {
+        border-radius: 24px;
+    }
+
+    .about-hero-copy,
+    .about-highlight-card,
+    .about-panel,
+    .about-faq-panel {
+        padding: 24px 20px;
+    }
+
+    .about-actions {
+        flex-direction: column;
+    }
+
+    .about-primary,
+    .about-secondary {
         width: 100%;
-        justify-content: flex-start;
+        min-width: 0;
     }
 
-    .carretas-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
-
-    .info-grid-cards {
+    .about-steps,
+    .about-mini-grid {
         grid-template-columns: 1fr;
     }
 
-    .parceiros-grid {
-        gap: 20px;
+    .about-showcase-card img {
+        height: 220px;
     }
 
-    .parceiro-card {
-        width: min(100%, 320px);
-        padding: 22px;
-    }
-}
-
-@media (max-width: 520px) {
-    .carreta-card img {
-        height: 180px;
-    }
-
-    .carreta-info {
-        padding: 16px;
-    }
-
-    .parceiro-card p {
-        font-size: 1rem;
+    .about-partners {
+        flex-direction: column;
     }
 }
