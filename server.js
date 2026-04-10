@@ -1934,13 +1934,17 @@ async function createApp() {
     app.get('/api/interessados', exigirAuthAdmin, async (req, res) => {
         try {
             const temEnviadoEm = await verificarColunaInteressadosEnviadoEm();
-            const campos = ["id", "nome", "whatsapp", "email", "regiao", "perfil_curso", "status"];
-            if (temEnviadoEm) {
-                campos.push("enviado_em");
-            }
-
+            const extraEnviadoEm = temEnviadoEm ? `,
+                    enviado_em` : '';
             const [rows] = await db.query(`
-                SELECT ${campos.join(', ')}
+                SELECT
+                    id,
+                    COALESCE(nome, '') AS nome,
+                    COALESCE(whatsapp, '') AS whatsapp,
+                    COALESCE(email, '') AS email,
+                    COALESCE(regiao, '') AS regiao,
+                    COALESCE(perfil_curso, '') AS perfil_curso,
+                    COALESCE(status, 'aguardando') AS status${extraEnviadoEm}
                 FROM interessados
                 ORDER BY id DESC
             `);

@@ -58,13 +58,17 @@ async function carregarInteressados() {
                 : '<i class="bi bi-hourglass-split" aria-hidden="true"></i> Esperando curso';
 
             // Formatação do nome da categoria com a primeira letra maiúscula
-            const perfilCapitalizado = lead.perfil_curso.charAt(0).toUpperCase() + lead.perfil_curso.slice(1);
+            const perfilNormalizado = String(lead.perfil_curso || '-');
+            const perfilCapitalizado = perfilNormalizado === '-'
+                ? '-'
+                : perfilNormalizado.charAt(0).toUpperCase() + perfilNormalizado.slice(1);
+            const regiaoNormalizada = String(lead.regiao || '-').replace(/_/g, ' ');
 
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${lead.nome}</strong></td>
                     <td>${lead.whatsapp}</td>
-                    <td style="text-transform: capitalize;">${lead.regiao.replace('_', ' ')}</td>
+                    <td style="text-transform: capitalize;">${regiaoNormalizada}</td>
                     <td>${perfilCapitalizado}</td>
                     <td>
                         <span class="status ${classeStatus}">
