@@ -1817,7 +1817,7 @@ async function createApp() {
                 return res.json(rows);
             } catch (erroColuna) {
                 if (erroColuna && erroColuna.code === "42703") {
-                    console.warn("[inscritos] Colunas de matricula ainda nao existem. Aplicando fallback.");
+                    console.warn("[inscritos] Colunas novas ainda nao existem no banco. Aplicando fallback.");
 
                     const [rowsFallback] = await db.query(`
                         SELECT
@@ -1829,7 +1829,7 @@ async function createApp() {
                             rg,
                             mora_vitoria,
                             escolaridade,
-                            genero,
+                            NULL::varchar AS genero,
                             cep,
                             numero,
                             rua,
