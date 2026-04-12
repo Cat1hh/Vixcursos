@@ -72,6 +72,7 @@ CREATE TABLE pre_inscricoes (
     curso_id INT NOT NULL,
     mora_vitoria VARCHAR(3) NULL,
     escolaridade VARCHAR(80) NULL,
+    genero VARCHAR(20) NULL,
     cep VARCHAR(12) NULL,
     numero VARCHAR(20) NULL,
     rua VARCHAR(150) NULL,

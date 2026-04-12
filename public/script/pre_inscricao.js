@@ -75,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let documentoPendente = null;
     const respostasUsuario = {
         curso_id: cursoId,
+        anexar_cpf_documento: 'sim',
         genero: '',
         possui_necessidade_especial: 'nao',
         tipo_necessidade_especial: '',
@@ -101,6 +102,15 @@ document.addEventListener("DOMContentLoaded", () => {
             pergunta: "Perfeito. Agora me informe o número do seu <strong>RG</strong>.",
             tipo: "texto",
             chave: "rg"
+        },
+        {
+            pergunta: "Você quer anexar a foto do <strong>CPF</strong>?",
+            tipo: "botoes",
+            chave: "anexar_cpf_documento",
+            opcoes: [
+                { texto: "Sim", valor: "sim" },
+                { texto: "Não", valor: "nao" }
+            ]
         },
         {
             pergunta: "Agora envie uma foto do seu <strong>CPF</strong>. No celular, tire a foto; no computador, anexe o arquivo.",
@@ -167,10 +177,8 @@ document.addEventListener("DOMContentLoaded", () => {
             tipo: "botoes",
             chave: "genero",
             opcoes: [
-                { texto: "Masculino", valor: "Masculino" },
-                { texto: "Feminino", valor: "Feminino" },
-                { texto: "Outro", valor: "Outro" },
-                { texto: "Prefiro não dizer", valor: "Prefiro não dizer" }
+                { texto: "Homem", valor: "Homem" },
+                { texto: "Mulher", valor: "Mulher" }
             ]
         },
         {
@@ -626,6 +634,20 @@ document.addEventListener("DOMContentLoaded", () => {
             if (chaveAtual === 'rg' && !normalizarRg(respostaUser)) {
                 await mostrarDigitando(800);
                 addMensagemBot('❌ RG inválido. Digite o número do RG para continuar.');
+                await mostrarPerguntaAtual();
+                return;
+            }
+
+            if (chaveAtual === 'anexar_cpf_documento' && respostaUser === 'nao') {
+                respostasUsuario.cpf_documento = null;
+                respostasUsuario.cpf_documento_nome = '';
+                respostasUsuario.cpf_documento_tipo = '';
+                respostasUsuario.validacao_cpf = 'nao';
+
+                await mostrarDigitando(700);
+                addMensagemBot('Tudo bem, vamos seguir sem anexar o CPF e continuar com o RG.');
+
+                etapaAtual = roteiro.findIndex(item => item.chave === 'rg_documento');
                 await mostrarPerguntaAtual();
                 return;
             }

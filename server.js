@@ -328,6 +328,7 @@ async function createApp() {
             await garantirColuna("pre_inscricoes", "rg", "VARCHAR(20) NULL");
             await garantirColuna("pre_inscricoes", "mora_vitoria", "VARCHAR(3) NULL");
             await garantirColuna("pre_inscricoes", "escolaridade", "VARCHAR(80) NULL");
+            await garantirColuna("pre_inscricoes", "genero", "VARCHAR(20) NULL");
             await garantirColuna("pre_inscricoes", "cep", "VARCHAR(12) NULL");
             await garantirColuna("pre_inscricoes", "numero", "VARCHAR(20) NULL");
             await garantirColuna("pre_inscricoes", "rua", "VARCHAR(150) NULL");
@@ -490,6 +491,15 @@ async function createApp() {
             .toUpperCase()
             .replace(/\s+/g, " ")
             .slice(0, 20);
+    }
+
+    function normalizarGenero(valor) {
+        const genero = String(valor || "").trim().toLowerCase();
+        if (!genero) return null;
+
+        if (["homem", "masculino", "m"].includes(genero)) return "Homem";
+        if (["mulher", "feminino", "f"].includes(genero)) return "Mulher";
+        return null;
     }
 
     function normalizarTelefoneE164(telefone) {
@@ -1032,6 +1042,7 @@ async function createApp() {
                 { tabela: "pre_inscricoes", coluna: "rg", definicao: "VARCHAR(20) NULL" },
                 { tabela: "pre_inscricoes", coluna: "mora_vitoria", definicao: "VARCHAR(3) NULL" },
                 { tabela: "pre_inscricoes", coluna: "escolaridade", definicao: "VARCHAR(80) NULL" },
+                { tabela: "pre_inscricoes", coluna: "genero", definicao: "VARCHAR(20) NULL" },
                 { tabela: "pre_inscricoes", coluna: "cep", definicao: "VARCHAR(12) NULL" },
                 { tabela: "pre_inscricoes", coluna: "numero", definicao: "VARCHAR(20) NULL" },
                 { tabela: "pre_inscricoes", coluna: "rua", definicao: "VARCHAR(150) NULL" },
@@ -1497,13 +1508,14 @@ async function createApp() {
 
             const cpfLimpo = normalizarCpf(cpf);
             const rgNormalizado = normalizarRg(rg);
+            const generoNormalizado = normalizarGenero(genero);
             const possuiNecessidadeEspecial = String(possui_necessidade_especial || "nao").toLowerCase() === "sim" ? "sim" : "nao";
             const tipoNecessidadeEspecial = possuiNecessidadeEspecial === "sim"
                 ? String(tipo_necessidade_especial || "").trim().slice(0, 120)
                 : null;
 
-            if (!nome || !email || !telefone || !cpfLimpo || !rgNormalizado || !curso_id || !cpf_documento || !rg_documento) {
-                return res.status(400).json({ error: "Preencha todos os campos obrigatórios, inclusive CPF, RG e as fotos dos dois documentos." });
+            if (!nome || !email || !telefone || !cpfLimpo || !rgNormalizado || !curso_id || !rg_documento) {
+                return res.status(400).json({ error: "Preencha todos os campos obrigatórios, inclusive CPF, RG e a foto do RG." });
             }
 
             const [inscricaoExistente] = await db.query(
@@ -1601,7 +1613,7 @@ async function createApp() {
                 curso_id,
                 mora_vitoria || null,
                 escolaridade || null,
-                genero || null,
+                generoNormalizado,
                 cep || null,
                 numero || null,
                 rua || null,
@@ -1609,8 +1621,8 @@ async function createApp() {
                 municipio || null,
                 possuiNecessidadeEspecial,
                 tipoNecessidadeEspecial,
-                cpf_documento,
-                rg_documento
+                cpf_documento || null,
+                rg_documento || null
             ]);
 
             const protocolo = gerarProtocoloInscricao(insertResult[0].id);
@@ -1730,6 +1742,7 @@ async function createApp() {
                         rg,
                         mora_vitoria,
                         escolaridade,
+                        genero,
                         cep,
                         numero,
                         rua,
@@ -1762,6 +1775,7 @@ async function createApp() {
                             rg,
                             mora_vitoria,
                             escolaridade,
+                            genero,
                             cep,
                             numero,
                             rua,
@@ -2112,11 +2126,11 @@ async function createApp() {
             `);
             
             const [mulheres] = await db.query(`
-                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE genero = 'Feminino'
+                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE LOWER(COALESCE(genero, '')) IN ('mulher', 'feminino')
             `);
             
             const [homens] = await db.query(`
-                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE genero = 'Masculino'
+                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE LOWER(COALESCE(genero, '')) IN ('homem', 'masculino')
             `);
             
             const [deficientes] = await db.query(`
@@ -2159,17 +2173,17 @@ async function createApp() {
 
             const [mulheres] = await db.query(`
                 SELECT COUNT(*) AS total FROM pre_inscricoes 
-                WHERE curso_id = ? AND genero = 'Feminino'
+                WHERE curso_id = ? AND LOWER(COALESCE(genero, '')) IN ('mulher', 'feminino')
             `, [cursoId]);
 
             const [homens] = await db.query(`
                 SELECT COUNT(*) AS total FROM pre_inscricoes 
-                WHERE curso_id = ? AND genero = 'Masculino'
+                WHERE curso_id = ? AND LOWER(COALESCE(genero, '')) IN ('homem', 'masculino')
             `, [cursoId]);
 
             const [outros] = await db.query(`
                 SELECT COUNT(*) AS total FROM pre_inscricoes 
-                WHERE curso_id = ? AND genero NOT IN ('Feminino', 'Masculino')
+                WHERE curso_id = ? AND LOWER(COALESCE(genero, '')) NOT IN ('mulher', 'feminino', 'homem', 'masculino')
             `, [cursoId]);
 
             const [evadidos] = await db.query(`
@@ -2219,9 +2233,9 @@ async function createApp() {
             const [relatorioPorCurso] = await db.query(`
                 SELECT
                     fcurso.curso,
-                    COUNT(CASE WHEN genero = 'Feminino' THEN 1 END) AS mulheres,
-                    COUNT(CASE WHEN genero = 'Masculino' THEN 1 END) AS homens,
-                    COUNT(CASE WHEN genero NOT IN ('Feminino', 'Masculino') THEN 1 END) AS outros,
+                    COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('mulher', 'feminino') THEN 1 END) AS mulheres,
+                    COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('homem', 'masculino') THEN 1 END) AS homens,
+                    COUNT(CASE WHEN LOWER(COALESCE(genero, '')) NOT IN ('mulher', 'feminino', 'homem', 'masculino') THEN 1 END) AS outros,
                     COUNT(*) AS total
                 FROM pre_inscricoes pi
                 LEFT JOIN cursos c ON c.id = pi.curso_id
@@ -2293,8 +2307,8 @@ async function createApp() {
                     COALESCE(pi.municipio, 'Não informado') AS municipio,
                     COUNT(*) AS total_inscritos,
                     COUNT(DISTINCT pi.curso_id) AS cursos_inscritos,
-                    COUNT(CASE WHEN genero = 'Feminino' THEN 1 END) AS mulheres,
-                    COUNT(CASE WHEN genero = 'Masculino' THEN 1 END) AS homens,
+                    COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('mulher', 'feminino') THEN 1 END) AS mulheres,
+                    COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('homem', 'masculino') THEN 1 END) AS homens,
                     COUNT(CASE WHEN possui_necessidade_especial = 'Sim' THEN 1 END) AS deficientes
                 FROM pre_inscricoes pi
                 GROUP BY pi.bairro, pi.municipio

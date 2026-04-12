@@ -7,13 +7,21 @@
 ALTER TABLE pre_inscricoes 
 ADD COLUMN IF NOT EXISTS genero VARCHAR(20);
 
+-- Padronizar registros antigos para os novos valores
+UPDATE pre_inscricoes
+SET genero = CASE
+    WHEN LOWER(COALESCE(genero, '')) IN ('masculino', 'homem', 'm') THEN 'Homem'
+    WHEN LOWER(COALESCE(genero, '')) IN ('feminino', 'mulher', 'f') THEN 'Mulher'
+    ELSE NULL
+END;
+
 -- Adicionar coluna de status da inscrição se não existir
 ALTER TABLE pre_inscricoes 
 ADD COLUMN IF NOT EXISTS status_inscricao VARCHAR(30) DEFAULT 'ativo' 
 CHECK (status_inscricao IN ('ativo', 'evadido', 'concluido', 'desistiu', 'em_andamento'));
 
 -- Comentários explicativos das novas colunas
-COMMENT ON COLUMN pre_inscricoes.genero IS 'Gênero do inscrito: Masculino, Feminino, Outro, Prefiro não dizer';
+COMMENT ON COLUMN pre_inscricoes.genero IS 'Gênero do inscrito: Homem ou Mulher';
 COMMENT ON COLUMN pre_inscricoes.status_inscricao IS 'Status de participação no curso: ativo, evadido, concluido, desistiu, em_andamento';
 
 -- Criar tabela de monitoramento por curso (opcional, para histórico)

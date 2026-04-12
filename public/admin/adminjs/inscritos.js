@@ -225,7 +225,7 @@ async function abrirListaAlunos(idCurso) {
     document.getElementById('vagasCursoDetalhe').innerText = `${cursoAbertoAtual.vagas} vagas restantes`;
 
     const tbody = document.getElementById('tabelaAlunosBody');
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Buscando alunos... 🐢</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Buscando alunos... 🐢</td></tr>`;
 
     document.getElementById('telaCursos').classList.add('tela-oculta');
     document.getElementById('telaAlunos').classList.remove('tela-oculta');
@@ -238,10 +238,11 @@ async function abrirListaAlunos(idCurso) {
         tbody.innerHTML = ''; 
 
         if (alunosGlobais.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Nenhum aluno inscrito ainda.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Nenhum aluno inscrito ainda.</td></tr>`;
         } else {
             alunosGlobais.forEach(aluno => {
                 const bairroAluno = aluno.bairro || 'Não informado';
+                const generoAluno = (aluno.genero === 'Homem' || aluno.genero === 'Mulher') ? aluno.genero : 'Não informado';
                 const foneLimpo = (aluno.telefone || '').replace(/\D/g, '');
                 const linkWhats = foneLimpo ? `https://wa.me/55${foneLimpo}` : '#';
                 const nomeEscapadoJs = String(aluno.nome || '').replace(/'/g, "\\'");
@@ -263,6 +264,7 @@ async function abrirListaAlunos(idCurso) {
                         <td><strong>${escapeHtml(aluno.nome)}</strong></td>
                         <td>${escapeHtml(formatarCpf(aluno.cpf))}</td>
                         <td>${aluno.telefone || '-'}</td>
+                        <td>${escapeHtml(generoAluno)}</td>
                         <td>${escapeHtml(bairroAluno)}</td>
                         <td>${badgeNecessidade}</td>
                         <td>
@@ -284,7 +286,7 @@ async function abrirListaAlunos(idCurso) {
         }
     } catch (err) {
         console.error("Erro ao buscar alunos:", err);
-        tbody.innerHTML = `<tr><td colspan="6" style="color: red; text-align: center;">Erro ao carregar lista de alunos.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="color: red; text-align: center;">Erro ao carregar lista de alunos.</td></tr>`;
     }
 }
 
@@ -324,6 +326,7 @@ function abrirFichaAluno(idAluno) {
         <div class="detalhe-item"><span>RG</span><strong>${checar(aluno.rg)}</strong></div>
         <div class="detalhe-item"><span>E-mail</span><strong>${checar(aluno.email)}</strong></div>
         <div class="detalhe-item"><span>Celular Principal</span><strong>${checar(aluno.telefone)}</strong></div>
+        <div class="detalhe-item"><span>Gênero</span><strong>${checar(aluno.genero)}</strong></div>
         <div class="detalhe-item"><span>Data da Pré-inscrição</span><strong>${checar(formatarDataBr(aluno.data))}</strong></div>
         <div class="detalhe-item"><span>Escolaridade</span><strong>${checar(aluno.escolaridade)}</strong></div>
         <div class="detalhe-item"><span>Mora/Trabalha em Vitória?</span><strong>${aluno.mora_vitoria === 'sim' ? '<i class="bi bi-check-circle-fill" aria-hidden="true"></i> Sim' : (aluno.mora_vitoria === 'nao' ? '<i class="bi bi-x-circle-fill" aria-hidden="true"></i> Não' : checar(aluno.mora_vitoria))}</strong></div>
