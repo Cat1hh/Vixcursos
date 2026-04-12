@@ -1581,49 +1581,103 @@ async function createApp() {
                 local: curso[0].local_nome
             };
 
-            const [insertResult] = await db.query(`
-                INSERT INTO pre_inscricoes (
+            let insertResult;
+            try {
+                const [rowsInsert] = await db.query(`
+                    INSERT INTO pre_inscricoes (
+                        nome,
+                        email,
+                        telefone,
+                        cpf,
+                        rg,
+                        curso_id,
+                        mora_vitoria,
+                        escolaridade,
+                        genero,
+                        cep,
+                        numero,
+                        rua,
+                        bairro,
+                        municipio,
+                        possui_necessidade_especial,
+                        tipo_necessidade_especial,
+                        cpf_documento,
+                        rg_documento
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    RETURNING id
+                `, [
                     nome,
                     email,
                     telefone,
-                    cpf,
-                    rg,
+                    cpfLimpo,
+                    rgNormalizado,
                     curso_id,
-                    mora_vitoria,
-                    escolaridade,
-                    genero,
-                    cep,
-                    numero,
-                    rua,
-                    bairro,
-                    municipio,
-                    possui_necessidade_especial,
-                    tipo_necessidade_especial,
-                    cpf_documento,
-                    rg_documento
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                RETURNING id
-            `, [
-                nome,
-                email,
-                telefone,
-                cpfLimpo,
-                rgNormalizado,
-                curso_id,
-                mora_vitoria || null,
-                escolaridade || null,
-                generoNormalizado,
-                cep || null,
-                numero || null,
-                rua || null,
-                bairro || null,
-                municipio || null,
-                possuiNecessidadeEspecial,
-                tipoNecessidadeEspecial,
-                cpf_documento || null,
-                rg_documento || null
-            ]);
+                    mora_vitoria || null,
+                    escolaridade || null,
+                    generoNormalizado,
+                    cep || null,
+                    numero || null,
+                    rua || null,
+                    bairro || null,
+                    municipio || null,
+                    possuiNecessidadeEspecial,
+                    tipoNecessidadeEspecial,
+                    cpf_documento || null,
+                    rg_documento || null
+                ]);
+                insertResult = rowsInsert;
+            } catch (erroInsert) {
+                const colunaGeneroAusente =
+                    erroInsert?.code === "42703" &&
+                    /genero/i.test(String(erroInsert?.message || ""));
+
+                if (!colunaGeneroAusente) throw erroInsert;
+
+                console.warn("[inscricao] coluna genero ausente no banco. Usando fallback sem genero.");
+                const [rowsFallback] = await db.query(`
+                    INSERT INTO pre_inscricoes (
+                        nome,
+                        email,
+                        telefone,
+                        cpf,
+                        rg,
+                        curso_id,
+                        mora_vitoria,
+                        escolaridade,
+                        cep,
+                        numero,
+                        rua,
+                        bairro,
+                        municipio,
+                        possui_necessidade_especial,
+                        tipo_necessidade_especial,
+                        cpf_documento,
+                        rg_documento
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    RETURNING id
+                `, [
+                    nome,
+                    email,
+                    telefone,
+                    cpfLimpo,
+                    rgNormalizado,
+                    curso_id,
+                    mora_vitoria || null,
+                    escolaridade || null,
+                    cep || null,
+                    numero || null,
+                    rua || null,
+                    bairro || null,
+                    municipio || null,
+                    possuiNecessidadeEspecial,
+                    tipoNecessidadeEspecial,
+                    cpf_documento || null,
+                    rg_documento || null
+                ]);
+                insertResult = rowsFallback;
+            }
 
             const protocolo = gerarProtocoloInscricao(insertResult[0].id);
 
