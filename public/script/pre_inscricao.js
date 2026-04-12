@@ -75,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let documentoPendente = null;
     const respostasUsuario = {
         curso_id: cursoId,
+        genero: '',
         possui_necessidade_especial: 'nao',
         tipo_necessidade_especial: '',
         imagem_autorizada: 'sim', // Padrão
@@ -107,9 +108,27 @@ document.addEventListener("DOMContentLoaded", () => {
             chave: "cpf_documento"
         },
         {
+            pergunta: "Os dados do seu <strong>CPF</strong> estão <strong>legíveis e corretos</strong> na foto?",
+            tipo: "botoes",
+            chave: "validacao_cpf",
+            opcoes: [
+                { texto: "Sim, está correto", valor: "sim" },
+                { texto: "Não, vou tirar outra foto", valor: "nao" }
+            ]
+        },
+        {
             pergunta: "Agora envie uma foto do seu <strong>RG</strong>. No celular, tire a foto; no computador, anexe o arquivo.",
             tipo: "arquivo",
             chave: "rg_documento"
+        },
+        {
+            pergunta: "Os dados do seu <strong>RG</strong> estão <strong>legíveis e corretos</strong> na foto?",
+            tipo: "botoes",
+            chave: "validacao_rg",
+            opcoes: [
+                { texto: "Sim, está correto", valor: "sim" },
+                { texto: "Não, vou tirar outra foto", valor: "nao" }
+            ]
         },
         {
             pergunta: "Ótimo. Qual é o seu <strong>E-mail</strong>?",
@@ -141,6 +160,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 { texto: "Ensino Médio Incompleto", valor: "Ensino Médio Incompleto" },
                 { texto: "Ensino Médio Completo", valor: "Ensino Médio Completo" },
                 { texto: "Ensino Superior Completo", valor: "Ensino Superior Completo" }
+            ]
+        },
+        {
+            pergunta: "Com qual gênero você se identifica?",
+            tipo: "botoes",
+            chave: "genero",
+            opcoes: [
+                { texto: "Masculino", valor: "Masculino" },
+                { texto: "Feminino", valor: "Feminino" },
+                { texto: "Outro", valor: "Outro" },
+                { texto: "Prefiro não dizer", valor: "Prefiro não dizer" }
             ]
         },
         {
@@ -249,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function aplicarDadosSalvosNosCampos() {
         if (!dadosSalvos) return;
 
-        ['nome', 'email', 'telefone', 'rg', 'mora_vitoria', 'escolaridade', 'possui_necessidade_especial', 'tipo_necessidade_especial', 'cep', 'numero', 'rua', 'bairro', 'municipio'].forEach(campo => {
+        ['nome', 'email', 'telefone', 'rg', 'mora_vitoria', 'escolaridade', 'genero', 'possui_necessidade_especial', 'tipo_necessidade_especial', 'cep', 'numero', 'rua', 'bairro', 'municipio'].forEach(campo => {
             if (dadosSalvos[campo]) {
                 respostasUsuario[campo] = dadosSalvos[campo];
             }
@@ -458,6 +488,36 @@ document.addEventListener("DOMContentLoaded", () => {
     // 6. CONTROLADOR DE FLUXO (Avança as perguntas)
     // =========================================================
     async function processarProximaEtapa(respostaUser, labelExibida) {
+
+        // ── Validação de CPF e RG ──────────────────────────
+        const passoAtual = obterPassoAtual();
+        if (passoAtual && (passoAtual.chave === 'validacao_cpf' || passoAtual.chave === 'validacao_rg')) {
+            addMensagemUsuario(labelExibida);
+            
+            if (respostaUser === 'nao') {
+                // Usuário quer tirar outra foto
+                await mostrarDigitando(500);
+                
+                // Volta um passo para a pergunta de tirar foto
+                etapaAtual--;
+                
+                // Limpa os dados da foto anterior
+                const fotoAnterior = passoAtual.chave === 'validacao_cpf' ? 'cpf_documento' : 'rg_documento';
+                respostasUsuario[fotoAnterior] = '';
+                documentoPendente = null;
+                
+                addMensagemBot('Sem problemas! Tire outra foto e tente novamente.');
+                await mostrarPerguntaAtual();
+                return;
+            } else {
+                // Usuário confirmou que está correto
+                addMensagemBot('👍 Perfeito! Documento validado.');
+                etapaAtual++;
+                await mostrarDigitando(700);
+                await mostrarPerguntaAtual();
+                return;
+            }
+        }
 
         if (aguardandoEscolhaCpf) {
             addMensagemUsuario(labelExibida || (respostaUser === 'auto' ? 'Auto-preencher' : 'Quero mudar algo'));

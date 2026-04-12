@@ -1483,6 +1483,7 @@ async function createApp() {
                 curso_id,
                 mora_vitoria,
                 escolaridade,
+                genero,
                 cep,
                 numero,
                 rua,
@@ -1578,6 +1579,7 @@ async function createApp() {
                     curso_id,
                     mora_vitoria,
                     escolaridade,
+                    genero,
                     cep,
                     numero,
                     rua,
@@ -1588,7 +1590,7 @@ async function createApp() {
                     cpf_documento,
                     rg_documento
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 RETURNING id
             `, [
                 nome,
@@ -1599,6 +1601,7 @@ async function createApp() {
                 curso_id,
                 mora_vitoria || null,
                 escolaridade || null,
+                genero || null,
                 cep || null,
                 numero || null,
                 rua || null,
@@ -2090,6 +2093,217 @@ async function createApp() {
             res.json(rows);
         } catch (err) {
             return responderErroBanco(res, err, "Erro ao buscar stats");
+        }
+    });
+
+    // ============================================================
+    // ROTAS DE MONITORAMENTO COMPLETO
+    // ============================================================
+
+    // Retorna métricas gerais de monitoramento
+    app.get("/api/admin/monitoramento-geral", exigirAuthAdmin, async (req, res) => {
+        try {
+            const [totalInscritos] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes
+            `);
+            
+            const [totalEvadidos] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE status_inscricao = 'evadido'
+            `);
+            
+            const [mulheres] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE genero = 'Feminino'
+            `);
+            
+            const [homens] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE genero = 'Masculino'
+            `);
+            
+            const [deficientes] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE possui_necessidade_especial = 'Sim'
+            `);
+
+            const [cursosMaisProcurados] = await db.query(`
+                SELECT 
+                    fcurso.curso,
+                    COUNT(pi.id) AS inscricoes
+                FROM pre_inscricoes pi
+                LEFT JOIN cursos c ON c.id = pi.curso_id
+                LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
+                GROUP BY fcurso.curso
+                ORDER BY inscricoes DESC
+                LIMIT 5
+            `);
+
+            res.json({
+                totalInscritos: totalInscritos[0]?.total || 0,
+                totalEvadidos: totalEvadidos[0]?.total || 0,
+                mulheres: mulheres[0]?.total || 0,
+                homens: homens[0]?.total || 0,
+                deficientes: deficientes[0]?.total || 0,
+                cursosMaisProcurados: cursosMaisProcurados || []
+            });
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro ao buscar monitoramento geral");
+        }
+    });
+
+    // Retorna métricas por curso específico
+    app.get("/api/admin/monitoramento-curso/:cursoId", exigirAuthAdmin, async (req, res) => {
+        try {
+            const { cursoId } = req.params;
+
+            const [inscritosGeral] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE curso_id = ?
+            `, [cursoId]);
+
+            const [mulheres] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes 
+                WHERE curso_id = ? AND genero = 'Feminino'
+            `, [cursoId]);
+
+            const [homens] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes 
+                WHERE curso_id = ? AND genero = 'Masculino'
+            `, [cursoId]);
+
+            const [outros] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes 
+                WHERE curso_id = ? AND genero NOT IN ('Feminino', 'Masculino')
+            `, [cursoId]);
+
+            const [evadidos] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes 
+                WHERE curso_id = ? AND status_inscricao = 'evadido'
+            `, [cursoId]);
+
+            const [ativos] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes 
+                WHERE curso_id = ? AND status_inscricao IN ('ativo', 'em_andamento')
+            `, [cursoId]);
+
+            const [concluidos] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes 
+                WHERE curso_id = ? AND status_inscricao = 'concluido'
+            `, [cursoId]);
+
+            const [deficientes] = await db.query(`
+                SELECT COUNT(*) AS total FROM pre_inscricoes 
+                WHERE curso_id = ? AND possui_necessidade_especial = 'Sim'
+            `, [cursoId]);
+
+            const taxaEvasao = inscritosGeral[0]?.total > 0 
+                ? ((evadidos[0]?.total || 0) / inscritosGeral[0]?.total * 100).toFixed(2)
+                : 0;
+
+            res.json({
+                cursoId,
+                totalInscritos: inscritosGeral[0]?.total || 0,
+                mulheres: mulheres[0]?.total || 0,
+                homens: homens[0]?.total || 0,
+                outros: outros[0]?.total || 0,
+                evadidos: evadidos[0]?.total || 0,
+                ativos: ativos[0]?.total || 0,
+                concluidos: concluidos[0]?.total || 0,
+                deficientes: deficientes[0]?.total || 0,
+                taxaEvasao: parseFloat(taxaEvasao)
+            });
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro ao buscar monitoramento do curso");
+        }
+    });
+
+    // Relatório de gênero por categoria de curso
+    app.get("/api/admin/relatorio-genero", exigirAuthAdmin, async (req, res) => {
+        try {
+            const [relatorioPorCurso] = await db.query(`
+                SELECT
+                    fcurso.curso,
+                    COUNT(CASE WHEN genero = 'Feminino' THEN 1 END) AS mulheres,
+                    COUNT(CASE WHEN genero = 'Masculino' THEN 1 END) AS homens,
+                    COUNT(CASE WHEN genero NOT IN ('Feminino', 'Masculino') THEN 1 END) AS outros,
+                    COUNT(*) AS total
+                FROM pre_inscricoes pi
+                LEFT JOIN cursos c ON c.id = pi.curso_id
+                LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
+                GROUP BY fcurso.curso
+                ORDER BY total DESC
+            `);
+
+            res.json(relatorioPorCurso || []);
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro ao buscar relatório de gênero");
+        }
+    });
+
+    // Relatório de deficientes
+    app.get("/api/admin/relatorio-deficientes", exigirAuthAdmin, async (req, res) => {
+        try {
+            const [relatorioPorCurso] = await db.query(`
+                SELECT
+                    fcurso.curso,
+                    COUNT(CASE WHEN possui_necessidade_especial = 'Sim' THEN 1 END) AS deficientes,
+                    COUNT(CASE WHEN possui_necessidade_especial = 'Nao' THEN 1 END) AS nao_deficientes,
+                    COUNT(*) AS total,
+                    GROUP_CONCAT(DISTINCT tipo_necessidade_especial) AS tipos_necessidade
+                FROM pre_inscricoes pi
+                LEFT JOIN cursos c ON c.id = pi.curso_id
+                LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
+                GROUP BY fcurso.curso
+                ORDER BY deficientes DESC
+            `);
+
+            res.json(relatorioPorCurso || []);
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro ao buscar relatório de deficientes");
+        }
+    });
+
+    // Relatório de evasão por curso
+    app.get("/api/admin/relatorio-evasao", exigirAuthAdmin, async (req, res) => {
+        try {
+            const [relatorioEvasao] = await db.query(`
+                SELECT
+                    fcurso.curso,
+                    COUNT(CASE WHEN status_inscricao = 'ativo' OR status_inscricao = 'em_andamento' THEN 1 END) AS ativos,
+                    COUNT(CASE WHEN status_inscricao = 'evadido' THEN 1 END) AS evadidos,
+                    COUNT(CASE WHEN status_inscricao = 'concluido' THEN 1 END) AS concluidos,
+                    COUNT(CASE WHEN status_inscricao = 'desistiu' THEN 1 END) AS desistiram,
+                    COUNT(*) AS total,
+                    ROUND(COUNT(CASE WHEN status_inscricao = 'evadido' THEN 1 END) * 100.0 / COUNT(*), 2) AS taxa_evasao
+                FROM pre_inscricoes pi
+                LEFT JOIN cursos c ON c.id = pi.curso_id
+                LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
+                GROUP BY fcurso.curso
+                ORDER BY taxa_evasao DESC
+            `);
+
+            res.json(relatorioEvasao || []);
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro ao buscar relatório de evasão");
+        }
+    });
+
+    // Relatório de inscrições por região/bairro
+    app.get("/api/admin/relatorio-regioes", exigirAuthAdmin, async (req, res) => {
+        try {
+            const [relatorioRegioes] = await db.query(`
+                SELECT
+                    COALESCE(pi.bairro, 'Não informado') AS regiao,
+                    COALESCE(pi.municipio, 'Não informado') AS municipio,
+                    COUNT(*) AS total_inscritos,
+                    COUNT(DISTINCT pi.curso_id) AS cursos_inscritos,
+                    COUNT(CASE WHEN genero = 'Feminino' THEN 1 END) AS mulheres,
+                    COUNT(CASE WHEN genero = 'Masculino' THEN 1 END) AS homens,
+                    COUNT(CASE WHEN possui_necessidade_especial = 'Sim' THEN 1 END) AS deficientes
+                FROM pre_inscricoes pi
+                GROUP BY pi.bairro, pi.municipio
+                ORDER BY total_inscritos DESC
+            `);
+
+            res.json(relatorioRegioes || []);
+        } catch (err) {
+            return responderErroBanco(res, err, "Erro ao buscar relatório de regiões");
         }
     });
 
