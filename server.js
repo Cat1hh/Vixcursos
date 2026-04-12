@@ -2188,7 +2188,7 @@ async function createApp() {
             `);
             
             const [deficientes] = await db.query(`
-                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE possui_necessidade_especial = 'Sim'
+                SELECT COUNT(*) AS total FROM pre_inscricoes WHERE LOWER(COALESCE(possui_necessidade_especial, '')) = 'sim'
             `);
 
             const [cursosMaisProcurados] = await db.query(`
@@ -2257,7 +2257,7 @@ async function createApp() {
 
             const [deficientes] = await db.query(`
                 SELECT COUNT(*) AS total FROM pre_inscricoes 
-                WHERE curso_id = ? AND possui_necessidade_especial = 'Sim'
+                WHERE curso_id = ? AND LOWER(COALESCE(possui_necessidade_especial, '')) = 'sim'
             `, [cursoId]);
 
             const taxaEvasao = inscritosGeral[0]?.total > 0 
@@ -2310,10 +2310,10 @@ async function createApp() {
             const [relatorioPorCurso] = await db.query(`
                 SELECT
                     fcurso.curso,
-                    COUNT(CASE WHEN possui_necessidade_especial = 'Sim' THEN 1 END) AS deficientes,
-                    COUNT(CASE WHEN possui_necessidade_especial = 'Nao' THEN 1 END) AS nao_deficientes,
+                    COUNT(CASE WHEN LOWER(COALESCE(possui_necessidade_especial, '')) = 'sim' THEN 1 END) AS deficientes,
+                    COUNT(CASE WHEN LOWER(COALESCE(possui_necessidade_especial, '')) = 'nao' THEN 1 END) AS nao_deficientes,
                     COUNT(*) AS total,
-                    GROUP_CONCAT(DISTINCT tipo_necessidade_especial) AS tipos_necessidade
+                    STRING_AGG(DISTINCT NULLIF(tipo_necessidade_especial, ''), ', ') AS tipos_necessidade
                 FROM pre_inscricoes pi
                 LEFT JOIN cursos c ON c.id = pi.curso_id
                 LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
@@ -2363,7 +2363,7 @@ async function createApp() {
                     COUNT(DISTINCT pi.curso_id) AS cursos_inscritos,
                     COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('mulher', 'feminino') THEN 1 END) AS mulheres,
                     COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('homem', 'masculino') THEN 1 END) AS homens,
-                    COUNT(CASE WHEN possui_necessidade_especial = 'Sim' THEN 1 END) AS deficientes
+                    COUNT(CASE WHEN LOWER(COALESCE(possui_necessidade_especial, '')) = 'sim' THEN 1 END) AS deficientes
                 FROM pre_inscricoes pi
                 GROUP BY pi.bairro, pi.municipio
                 ORDER BY total_inscritos DESC

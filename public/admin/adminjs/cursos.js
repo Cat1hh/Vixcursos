@@ -6,14 +6,16 @@
 // Gráficos globais
 let chartGenero, chartEvasao, chartDeficientes, chartRegioes;
 
-function abrirAba(nomeAba) {
+function abrirAba(nomeAba, botao) {
     // Esconder todos os tabs
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     
     // Mostrar tab selecionada
     document.getElementById(nomeAba).classList.add('active');
-    event.target.classList.add('active');
+    if (botao) {
+        botao.classList.add('active');
+    }
     
     // Redimensionar gráficos se necessário
     setTimeout(() => {
@@ -362,7 +364,7 @@ async function carregarDadosRegioes() {
                 datasets: [{
                     label: 'Total de Inscritos',
                     data: inscritosCount,
-                    backgroundColor: 'linear-gradient(90deg, var(--coral-vix), var(--laranja-vix))',
+                    backgroundColor: '#F97360',
                     borderColor: 'rgba(30, 41, 59, 1)',
                     borderWidth: 1
                 }]
