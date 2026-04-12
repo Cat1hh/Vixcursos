@@ -2284,21 +2284,44 @@ async function createApp() {
     // Relatório de gênero por categoria de curso
     app.get("/api/admin/relatorio-genero", exigirAuthAdmin, async (req, res) => {
         try {
-            const [relatorioPorCurso] = await db.query(`
-                SELECT
-                    fcurso.curso,
-                    COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('mulher', 'feminino') THEN 1 END) AS mulheres,
-                    COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('homem', 'masculino') THEN 1 END) AS homens,
-                    COUNT(CASE WHEN LOWER(COALESCE(genero, '')) NOT IN ('mulher', 'feminino', 'homem', 'masculino') THEN 1 END) AS outros,
-                    COUNT(*) AS total
-                FROM pre_inscricoes pi
-                LEFT JOIN cursos c ON c.id = pi.curso_id
-                LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
-                GROUP BY fcurso.curso
-                ORDER BY total DESC
-            `);
+            try {
+                const [relatorioPorCurso] = await db.query(`
+                    SELECT
+                        fcurso.curso,
+                        COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('mulher', 'feminino') THEN 1 END) AS mulheres,
+                        COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('homem', 'masculino') THEN 1 END) AS homens,
+                        COUNT(CASE WHEN LOWER(COALESCE(genero, '')) NOT IN ('mulher', 'feminino', 'homem', 'masculino') THEN 1 END) AS outros,
+                        COUNT(*) AS total
+                    FROM pre_inscricoes pi
+                    LEFT JOIN cursos c ON c.id = pi.curso_id
+                    LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
+                    GROUP BY fcurso.curso
+                    ORDER BY total DESC
+                `);
 
-            res.json(relatorioPorCurso || []);
+                return res.json(relatorioPorCurso || []);
+            } catch (erroColuna) {
+                if (!(erroColuna && erroColuna.code === "42703")) {
+                    throw erroColuna;
+                }
+
+                console.warn("[monitoramento] coluna genero ausente. Fallback em relatorio-genero.");
+                const [rowsFallback] = await db.query(`
+                    SELECT
+                        fcurso.curso,
+                        0::int AS mulheres,
+                        0::int AS homens,
+                        COUNT(*) AS outros,
+                        COUNT(*) AS total
+                    FROM pre_inscricoes pi
+                    LEFT JOIN cursos c ON c.id = pi.curso_id
+                    LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
+                    GROUP BY fcurso.curso
+                    ORDER BY total DESC
+                `);
+
+                return res.json(rowsFallback || []);
+            }
         } catch (err) {
             return responderErroBanco(res, err, "Erro ao buscar relatório de gênero");
         }
@@ -2330,23 +2353,48 @@ async function createApp() {
     // Relatório de evasão por curso
     app.get("/api/admin/relatorio-evasao", exigirAuthAdmin, async (req, res) => {
         try {
-            const [relatorioEvasao] = await db.query(`
-                SELECT
-                    fcurso.curso,
-                    COUNT(CASE WHEN status_inscricao = 'ativo' OR status_inscricao = 'em_andamento' THEN 1 END) AS ativos,
-                    COUNT(CASE WHEN status_inscricao = 'evadido' THEN 1 END) AS evadidos,
-                    COUNT(CASE WHEN status_inscricao = 'concluido' THEN 1 END) AS concluidos,
-                    COUNT(CASE WHEN status_inscricao = 'desistiu' THEN 1 END) AS desistiram,
-                    COUNT(*) AS total,
-                    ROUND(COUNT(CASE WHEN status_inscricao = 'evadido' THEN 1 END) * 100.0 / COUNT(*), 2) AS taxa_evasao
-                FROM pre_inscricoes pi
-                LEFT JOIN cursos c ON c.id = pi.curso_id
-                LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
-                GROUP BY fcurso.curso
-                ORDER BY taxa_evasao DESC
-            `);
+            try {
+                const [relatorioEvasao] = await db.query(`
+                    SELECT
+                        fcurso.curso,
+                        COUNT(CASE WHEN status_inscricao = 'ativo' OR status_inscricao = 'em_andamento' THEN 1 END) AS ativos,
+                        COUNT(CASE WHEN status_inscricao = 'evadido' THEN 1 END) AS evadidos,
+                        COUNT(CASE WHEN status_inscricao = 'concluido' THEN 1 END) AS concluidos,
+                        COUNT(CASE WHEN status_inscricao = 'desistiu' THEN 1 END) AS desistiram,
+                        COUNT(*) AS total,
+                        ROUND(COUNT(CASE WHEN status_inscricao = 'evadido' THEN 1 END) * 100.0 / COUNT(*), 2) AS taxa_evasao
+                    FROM pre_inscricoes pi
+                    LEFT JOIN cursos c ON c.id = pi.curso_id
+                    LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
+                    GROUP BY fcurso.curso
+                    ORDER BY taxa_evasao DESC
+                `);
 
-            res.json(relatorioEvasao || []);
+                return res.json(relatorioEvasao || []);
+            } catch (erroColuna) {
+                if (!(erroColuna && erroColuna.code === "42703")) {
+                    throw erroColuna;
+                }
+
+                console.warn("[monitoramento] coluna status_inscricao ausente. Fallback em relatorio-evasao.");
+                const [rowsFallback] = await db.query(`
+                    SELECT
+                        fcurso.curso,
+                        COUNT(*) AS ativos,
+                        0::int AS evadidos,
+                        0::int AS concluidos,
+                        0::int AS desistiram,
+                        COUNT(*) AS total,
+                        0::numeric AS taxa_evasao
+                    FROM pre_inscricoes pi
+                    LEFT JOIN cursos c ON c.id = pi.curso_id
+                    LEFT JOIN filtro_curso fcurso ON fcurso.id = c.curso_id
+                    GROUP BY fcurso.curso
+                    ORDER BY total DESC
+                `);
+
+                return res.json(rowsFallback || []);
+            }
         } catch (err) {
             return responderErroBanco(res, err, "Erro ao buscar relatório de evasão");
         }
@@ -2355,21 +2403,44 @@ async function createApp() {
     // Relatório de inscrições por região/bairro
     app.get("/api/admin/relatorio-regioes", exigirAuthAdmin, async (req, res) => {
         try {
-            const [relatorioRegioes] = await db.query(`
-                SELECT
-                    COALESCE(pi.bairro, 'Não informado') AS regiao,
-                    COALESCE(pi.municipio, 'Não informado') AS municipio,
-                    COUNT(*) AS total_inscritos,
-                    COUNT(DISTINCT pi.curso_id) AS cursos_inscritos,
-                    COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('mulher', 'feminino') THEN 1 END) AS mulheres,
-                    COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('homem', 'masculino') THEN 1 END) AS homens,
-                    COUNT(CASE WHEN LOWER(COALESCE(possui_necessidade_especial, '')) = 'sim' THEN 1 END) AS deficientes
-                FROM pre_inscricoes pi
-                GROUP BY pi.bairro, pi.municipio
-                ORDER BY total_inscritos DESC
-            `);
+            try {
+                const [relatorioRegioes] = await db.query(`
+                    SELECT
+                        COALESCE(pi.bairro, 'Não informado') AS regiao,
+                        COALESCE(pi.municipio, 'Não informado') AS municipio,
+                        COUNT(*) AS total_inscritos,
+                        COUNT(DISTINCT pi.curso_id) AS cursos_inscritos,
+                        COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('mulher', 'feminino') THEN 1 END) AS mulheres,
+                        COUNT(CASE WHEN LOWER(COALESCE(genero, '')) IN ('homem', 'masculino') THEN 1 END) AS homens,
+                        COUNT(CASE WHEN LOWER(COALESCE(possui_necessidade_especial, '')) = 'sim' THEN 1 END) AS deficientes
+                    FROM pre_inscricoes pi
+                    GROUP BY pi.bairro, pi.municipio
+                    ORDER BY total_inscritos DESC
+                `);
 
-            res.json(relatorioRegioes || []);
+                return res.json(relatorioRegioes || []);
+            } catch (erroColuna) {
+                if (!(erroColuna && erroColuna.code === "42703")) {
+                    throw erroColuna;
+                }
+
+                console.warn("[monitoramento] colunas de monitoramento ausentes. Fallback em relatorio-regioes.");
+                const [rowsFallback] = await db.query(`
+                    SELECT
+                        COALESCE(pi.bairro, 'Não informado') AS regiao,
+                        COALESCE(pi.municipio, 'Não informado') AS municipio,
+                        COUNT(*) AS total_inscritos,
+                        COUNT(DISTINCT pi.curso_id) AS cursos_inscritos,
+                        0::int AS mulheres,
+                        0::int AS homens,
+                        0::int AS deficientes
+                    FROM pre_inscricoes pi
+                    GROUP BY pi.bairro, pi.municipio
+                    ORDER BY total_inscritos DESC
+                `);
+
+                return res.json(rowsFallback || []);
+            }
         } catch (err) {
             return responderErroBanco(res, err, "Erro ao buscar relatório de regiões");
         }
