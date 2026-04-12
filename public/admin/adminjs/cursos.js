@@ -6,6 +6,11 @@
 // Gráficos globais
 let chartGenero, chartEvasao, chartDeficientes, chartRegioes;
 
+function toNumber(valor) {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n : 0;
+}
+
 function abrirAba(nomeAba, botao) {
     // Esconder todos os tabs
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -144,17 +149,22 @@ async function carregarDadosGenero() {
         // Renderizar tabela
         let htmlTabela = '';
         dados.forEach(curso => {
-            feminino += curso.mulheres;
-            masculino += curso.homens;
-            outro += curso.outros;
+            const mulheres = toNumber(curso.mulheres);
+            const homens = toNumber(curso.homens);
+            const outros = toNumber(curso.outros);
+            const total = toNumber(curso.total);
+
+            feminino += mulheres;
+            masculino += homens;
+            outro += outros;
             
             htmlTabela += `
                 <tr>
                     <td><strong>${curso.curso || 'Sem curso'}</strong></td>
-                    <td><span class="badge badge-info">${curso.mulheres}</span></td>
-                    <td><span class="badge badge-info">${curso.homens}</span></td>
-                    <td><span class="badge badge-info">${curso.outros}</span></td>
-                    <td><strong>${curso.total}</strong></td>
+                    <td><span class="badge badge-info">${mulheres}</span></td>
+                    <td><span class="badge badge-info">${homens}</span></td>
+                    <td><span class="badge badge-info">${outros}</span></td>
+                    <td><strong>${total}</strong></td>
                 </tr>
             `;
         });
@@ -167,7 +177,7 @@ async function carregarDadosGenero() {
         chartGenero = new Chart(ctxGenero, {
             type: 'doughnut',
             data: {
-                labels: ['Mulheres', 'Homens', 'Outro'],
+                labels: ['Mulheres', 'Homens', 'Não informado/outros'],
                 datasets: [{
                     data: [feminino, masculino, outro],
                     backgroundColor: ['#FF6B9D', '#4A90E2', '#9B59B6'],
@@ -203,17 +213,22 @@ async function carregarDadosEvasao() {
         
         dados.forEach(curso => {
             cursosNomes.push(curso.curso || 'Sem nome');
-            taxasEvasao.push(parseFloat(curso.taxa_evasao) || 0);
+            const ativos = toNumber(curso.ativos);
+            const evadidos = toNumber(curso.evadidos);
+            const concluidos = toNumber(curso.concluidos);
+            const taxaEvasao = toNumber(curso.taxa_evasao);
+
+            taxasEvasao.push(taxaEvasao);
             
             htmlTabela += `
                 <tr>
                     <td><strong>${curso.curso || 'Sem curso'}</strong></td>
-                    <td><span class="badge badge-success">${curso.ativos}</span></td>
-                    <td><span class="badge badge-danger">${curso.evadidos}</span></td>
-                    <td><span class="badge badge-success">${curso.concluidos}</span></td>
+                    <td><span class="badge badge-success">${ativos}</span></td>
+                    <td><span class="badge badge-danger">${evadidos}</span></td>
+                    <td><span class="badge badge-success">${concluidos}</span></td>
                     <td>
-                        <strong style="color: ${parseFloat(curso.taxa_evasao) > 20 ? '#EF4444' : '#10B981'};">
-                            ${curso.taxa_evasao}%
+                        <strong style="color: ${taxaEvasao > 20 ? '#EF4444' : '#10B981'};">
+                            ${taxaEvasao.toFixed(2)}%
                         </strong>
                     </td>
                 </tr>
@@ -274,17 +289,21 @@ async function carregarDadosDeficientes() {
         let htmlTabela = '';
         
         dados.forEach(curso => {
-            deficitariosTotais += curso.deficientes;
-            naoDef += curso.nao_deficientes;
+            const deficientes = toNumber(curso.deficientes);
+            const naoDeficientes = toNumber(curso.nao_deficientes);
+            const total = toNumber(curso.total);
+
+            deficitariosTotais += deficientes;
+            naoDef += naoDeficientes;
             
-            const taxaInclusao = curso.total > 0 ? ((curso.deficientes / curso.total) * 100).toFixed(1) : 0;
+            const taxaInclusao = total > 0 ? ((deficientes / total) * 100).toFixed(1) : '0.0';
             
             htmlTabela += `
                 <tr>
                     <td><strong>${curso.curso || 'Sem curso'}</strong></td>
-                    <td><span class="badge badge-success">${curso.deficientes}</span></td>
-                    <td><span class="badge badge-info">${curso.nao_deficientes}</span></td>
-                    <td><strong>${curso.total}</strong></td>
+                    <td><span class="badge badge-success">${deficientes}</span></td>
+                    <td><span class="badge badge-info">${naoDeficientes}</span></td>
+                    <td><strong>${total}</strong></td>
                     <td><strong style="color: #10B981;">${taxaInclusao}%</strong></td>
                 </tr>
             `;
@@ -329,7 +348,13 @@ async function carregarDadosRegioes() {
         const dados = await res.json();
         
         // Ordenar por total de inscritos (maior para menor)
-        dados.sort((a, b) => b.total_inscritos - a.total_inscritos);
+        dados.sort((a, b) => {
+            const aNaoInformado = String(a.regiao || '').trim().toLowerCase() === 'não informado';
+            const bNaoInformado = String(b.regiao || '').trim().toLowerCase() === 'não informado';
+            if (aNaoInformado && !bNaoInformado) return 1;
+            if (!aNaoInformado && bNaoInformado) return -1;
+            return toNumber(b.total_inscritos) - toNumber(a.total_inscritos);
+        });
         
         // Renderizar tabela
         let htmlTabela = '';
@@ -337,17 +362,22 @@ async function carregarDadosRegioes() {
         let inscritosCount = [];
         
         dados.forEach(regiao => {
+            const totalInscritos = toNumber(regiao.total_inscritos);
+            const mulheres = toNumber(regiao.mulheres);
+            const homens = toNumber(regiao.homens);
+            const deficientes = toNumber(regiao.deficientes);
+
             regioesNomes.push((regiao.regiao || 'Não informado').substring(0, 20));
-            inscritosCount.push(regiao.total_inscritos);
+            inscritosCount.push(totalInscritos);
             
             htmlTabela += `
                 <tr>
                     <td><strong>${regiao.regiao || 'Não informado'}</strong></td>
                     <td><span class="badge badge-info">${regiao.municipio || 'Não informado'}</span></td>
-                    <td><strong style="color: var(--coral-vix);">${regiao.total_inscritos}</strong></td>
-                    <td><span class="badge badge-info">${regiao.mulheres}</span></td>
-                    <td><span class="badge badge-info">${regiao.homens}</span></td>
-                    <td><span class="badge badge-success">${regiao.deficientes}</span></td>
+                    <td><strong style="color: var(--coral-vix);">${totalInscritos}</strong></td>
+                    <td><span class="badge badge-info">${mulheres}</span></td>
+                    <td><span class="badge badge-info">${homens}</span></td>
+                    <td><span class="badge badge-success">${deficientes}</span></td>
                 </tr>
             `;
         });
