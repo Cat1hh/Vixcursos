@@ -1514,8 +1514,8 @@ async function createApp() {
                 ? String(tipo_necessidade_especial || "").trim().slice(0, 120)
                 : null;
 
-            if (!nome || !email || !telefone || !cpfLimpo || !rgNormalizado || !curso_id || !rg_documento) {
-                return res.status(400).json({ error: "Preencha todos os campos obrigatórios, inclusive CPF, RG e a foto do RG." });
+            if (!nome || !email || !telefone || !cpfLimpo || !rgNormalizado || !curso_id) {
+                return res.status(400).json({ error: "Preencha todos os campos obrigatórios, inclusive CPF e RG." });
             }
 
             const [inscricaoExistente] = await db.query(

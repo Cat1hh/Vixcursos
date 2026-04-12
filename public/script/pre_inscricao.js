@@ -76,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const respostasUsuario = {
         curso_id: cursoId,
         anexar_cpf_documento: 'sim',
+        anexar_rg_documento: 'sim',
         genero: '',
         possui_necessidade_especial: 'nao',
         tipo_necessidade_especial: '',
@@ -124,6 +125,15 @@ document.addEventListener("DOMContentLoaded", () => {
             opcoes: [
                 { texto: "Sim, está correto", valor: "sim" },
                 { texto: "Não, vou tirar outra foto", valor: "nao" }
+            ]
+        },
+        {
+            pergunta: "Você quer anexar a foto do <strong>RG</strong>?",
+            tipo: "botoes",
+            chave: "anexar_rg_documento",
+            opcoes: [
+                { texto: "Sim", valor: "sim" },
+                { texto: "Não", valor: "nao" }
             ]
         },
         {
@@ -645,9 +655,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 respostasUsuario.validacao_cpf = 'nao';
 
                 await mostrarDigitando(700);
-                addMensagemBot('Tudo bem, vamos seguir sem anexar o CPF e continuar com o RG.');
+                addMensagemBot('Tudo bem, vamos seguir sem anexar o CPF.');
 
-                etapaAtual = roteiro.findIndex(item => item.chave === 'rg_documento');
+                etapaAtual = roteiro.findIndex(item => item.chave === 'anexar_rg_documento');
+                await mostrarPerguntaAtual();
+                return;
+            }
+
+            if (chaveAtual === 'anexar_rg_documento' && respostaUser === 'nao') {
+                respostasUsuario.rg_documento = null;
+                respostasUsuario.rg_documento_nome = '';
+                respostasUsuario.rg_documento_tipo = '';
+                respostasUsuario.validacao_rg = 'nao';
+
+                await mostrarDigitando(700);
+                addMensagemBot('Tudo bem, vamos seguir sem anexar o RG e continuar o cadastro.');
+
+                etapaAtual = roteiro.findIndex(item => item.chave === 'email');
                 await mostrarPerguntaAtual();
                 return;
             }
